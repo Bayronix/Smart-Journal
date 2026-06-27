@@ -38,7 +38,7 @@ export default function AIInsights({ analysis }: Props) {
       <div className="flex items-center gap-2.5 px-4 py-3">
         <Brain size={15} className="text-indigo-400" />
         <span className="text-sm font-semibold text-slate-900 dark:text-zinc-100">AI Insights</span>
-        <span className="ml-auto text-xs text-slate-400 dark:text-zinc-600">
+        <span className="ml-auto text-xs text-slate-600 dark:text-zinc-200">
           {new Date(analysis.analyzedAt).toLocaleDateString()}
         </span>
       </div>
@@ -52,7 +52,7 @@ export default function AIInsights({ analysis }: Props) {
 
         <div className="flex items-center gap-2 flex-1">
           <TrendingUp size={13} className={stressColor} />
-          <span className="text-xs text-slate-400 dark:text-zinc-500 shrink-0">Stress</span>
+          <span className="text-xs text-slate-600 dark:text-zinc-200 shrink-0">Stress</span>
           <div className="flex-1 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
@@ -68,7 +68,7 @@ export default function AIInsights({ analysis }: Props) {
       {/* Key Topics */}
       {analysis.keyTopics.length > 0 && (
         <div className="px-4 py-3">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-zinc-500 mb-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-200 mb-2">
             <Tag size={11} /> Key Topics
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -81,15 +81,15 @@ export default function AIInsights({ analysis }: Props) {
 
       {/* Insights */}
       <div className="px-4 py-3">
-        <p className="text-xs text-slate-400 dark:text-zinc-500 mb-1.5 flex items-center gap-1.5">
+        <p className="text-xs text-slate-600 dark:text-zinc-200 mb-1.5 flex items-center gap-1.5">
           <Brain size={11} /> Psychological Insight
         </p>
-        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed">{analysis.insights}</p>
+        <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">{analysis.insights}</p>
       </div>
 
       {/* Advice */}
       <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-950/30">
-        <p className="text-xs text-slate-400 dark:text-zinc-500 mb-1.5 flex items-center gap-1.5">
+        <p className="text-xs text-slate-600 dark:text-zinc-200 mb-1.5 flex items-center gap-1.5">
           <Lightbulb size={11} /> Actionable Advice
         </p>
         <p className="text-sm text-indigo-700 dark:text-indigo-200 leading-relaxed">{analysis.advice}</p>

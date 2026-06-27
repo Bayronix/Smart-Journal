@@ -53,7 +53,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link key={href} href={href}
                 className={cn(
                   'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
-                  isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-zinc-500'
+                  isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-600 dark:text-zinc-200'
                 )}
               >
                 <Icon size={18} />

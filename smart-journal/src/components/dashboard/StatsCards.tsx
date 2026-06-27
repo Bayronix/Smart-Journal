@@ -78,7 +78,7 @@ export default function StatsCards() {
             <card.icon size={15} className={card.color} />
           </div>
           <p className="text-xl font-bold text-slate-900 dark:text-zinc-100">{card.value}</p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{card.label}</p>
+          <p className="text-xs text-slate-600 dark:text-zinc-200 mt-0.5">{card.label}</p>
         </motion.div>
       ))}
     </div>

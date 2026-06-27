@@ -191,12 +191,12 @@ export default function JournalEditor({ entry }: Props) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Entry title…"
-          className="bg-transparent text-2xl font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-300 dark:placeholder-zinc-700 outline-none w-full border-none focus:ring-0"
+          className="bg-transparent text-2xl font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-full border-none focus:ring-0"
         />
 
         {/* Tags */}
         <div className="flex flex-wrap items-center gap-2">
-          <Tag size={13} className="text-slate-400 dark:text-zinc-600" />
+          <Tag size={13} className="text-slate-600 dark:text-zinc-200" />
           {tags.map((tag) => (
             <Badge key={tag} variant="tag" className="gap-1">
               #{tag}
@@ -212,9 +212,9 @@ export default function JournalEditor({ entry }: Props) {
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
               placeholder="Add tag…"
-              className="bg-transparent text-xs text-slate-500 dark:text-zinc-400 placeholder-slate-300 dark:placeholder-zinc-700 outline-none w-24 border-b border-slate-200 dark:border-zinc-800 focus:border-indigo-500 pb-0.5 transition-colors"
+              className="bg-transparent text-xs text-slate-700 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-24 border-b border-slate-200 dark:border-zinc-800 focus:border-indigo-500 pb-0.5 transition-colors"
             />
-            <button onClick={addTag} className="text-slate-400 dark:text-zinc-600 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
+            <button onClick={addTag} className="text-slate-600 dark:text-zinc-200 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
               <Plus size={13} />
             </button>
           </div>
@@ -231,7 +231,7 @@ export default function JournalEditor({ entry }: Props) {
               if (!recording) setContent(e.target.value);
             }}
             placeholder="Start writing… or tap the mic to speak"
-            className="w-full min-h-[320px] bg-transparent text-slate-700 dark:text-zinc-300 placeholder-slate-300 dark:placeholder-zinc-700 text-base leading-relaxed outline-none resize-none border-none focus:ring-0"
+            className="w-full min-h-[320px] bg-transparent text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 text-base leading-relaxed outline-none resize-none border-none focus:ring-0"
           />
 
           {/* Live voice preview */}
@@ -263,7 +263,7 @@ export default function JournalEditor({ entry }: Props) {
 
         {/* Toolbar */}
         <div className="flex items-center gap-2 flex-wrap border-t border-slate-200 dark:border-zinc-800 pt-4">
-          <span className="text-xs text-slate-400 dark:text-zinc-600">{wordCount} word{wordCount !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-slate-600 dark:text-zinc-200">{wordCount} word{wordCount !== 1 ? 's' : ''}</span>
 
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             {/* Voice button */}

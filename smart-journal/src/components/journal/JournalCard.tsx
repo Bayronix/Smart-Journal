@@ -37,7 +37,7 @@ export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
           )}
         </div>
 
-        <p className="text-slate-400 dark:text-zinc-500 text-xs leading-relaxed mb-3 line-clamp-2">
+        <p className="text-slate-600 dark:text-zinc-200 text-xs leading-relaxed mb-3 line-clamp-2">
           {truncate(entry.content, 150)}
         </p>
 
@@ -52,7 +52,7 @@ export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
           </div>
         )}
 
-        <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-zinc-600">
+        <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-zinc-200">
           <Calendar size={11} />
           <span>{formatDate(entry.createdAt)}</span>
           <span className="ml-auto">{formatRelative(entry.createdAt)}</span>
@@ -74,7 +74,7 @@ export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
 
       <button
         onClick={(e) => { e.preventDefault(); onDelete(entry.id); }}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 dark:text-zinc-600 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-400/10 transition-all"
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-600 dark:text-zinc-200 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-400/10 transition-all"
         title="Delete entry"
       >
         <Trash2 size={13} />

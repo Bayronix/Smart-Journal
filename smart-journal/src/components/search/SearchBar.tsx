@@ -76,7 +76,7 @@ export default function SearchBar() {
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => setFocused(true)}
           placeholder="Search journal… e.g. 'stressed about work last month'"
-          className="flex-1 bg-transparent text-sm text-slate-700 dark:text-zinc-300 placeholder-slate-300 dark:placeholder-zinc-600 outline-none"
+          className="flex-1 bg-transparent text-sm text-slate-700 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-600 outline-none"
         />
         {query && (
           <button onClick={clear} className="text-zinc-600 hover:text-zinc-400 transition-colors">
@@ -106,8 +106,8 @@ export default function SearchBar() {
                     onClick={() => setFocused(false)}
                     className="block px-3 py-2.5 hover:bg-zinc-800 transition-colors border-t border-zinc-800/50 first:border-0"
                   >
-                    <p className="text-sm text-slate-800 dark:text-zinc-200 font-medium line-clamp-1">{r.entry.title || 'Untitled'}</p>
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 line-clamp-1 mt-0.5">{truncate(r.snippet, 90)}</p>
+                    <p className="text-sm text-slate-900 dark:text-zinc-200 font-medium line-clamp-1">{r.entry.title || 'Untitled'}</p>
+                    <p className="text-xs text-slate-600 dark:text-zinc-200 line-clamp-1 mt-0.5">{truncate(r.snippet, 90)}</p>
                   </Link>
                 ))}
               </div>
@@ -121,7 +121,7 @@ export default function SearchBar() {
                   <button
                     key={s}
                     onClick={() => handleChange(s)}
-                    className="w-full text-left px-3 py-2 text-sm text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-2"
                   >
                     <Search size={12} className="text-zinc-600" />
                     {s}

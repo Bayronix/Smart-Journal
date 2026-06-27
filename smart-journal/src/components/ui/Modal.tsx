@@ -41,7 +41,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-zinc-100">{title}</h3>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-md text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="p-1.5 rounded-md text-slate-400 dark:text-zinc-200 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <X size={16} />
                 </button>
