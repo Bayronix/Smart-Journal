@@ -72,13 +72,13 @@ export default function StatsCards() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.07 }}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-4"
+          className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm dark:shadow-none"
         >
           <div className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center mb-3`}>
             <card.icon size={15} className={card.color} />
           </div>
-          <p className="text-xl font-bold text-zinc-100">{card.value}</p>
-          <p className="text-xs text-zinc-500 mt-0.5">{card.label}</p>
+          <p className="text-xl font-bold text-slate-900 dark:text-zinc-100">{card.value}</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{card.label}</p>
         </motion.div>
       ))}
     </div>

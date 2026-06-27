@@ -34,14 +34,14 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-md"
+            className="relative z-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-md"
           >
             {title && (
               <div className="flex items-center justify-between px-6 pt-5 pb-0">
-                <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-zinc-100">{title}</h3>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  className="p-1.5 rounded-md text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <X size={16} />
                 </button>

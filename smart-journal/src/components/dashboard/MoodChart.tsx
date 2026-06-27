@@ -60,9 +60,9 @@ export default function MoodChart() {
 
   if (data.length < 2) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-zinc-300 mb-3">Mood Overview</h3>
-        <p className="text-zinc-600 text-sm py-8 text-center">
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-none">
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-3">Mood Overview</h3>
+        <p className="text-slate-400 dark:text-zinc-600 text-sm py-8 text-center">
           Analyze at least 2 entries to see your mood chart.
         </p>
       </div>
@@ -70,8 +70,8 @@ export default function MoodChart() {
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <h3 className="text-sm font-semibold text-zinc-300 mb-4">Mood Overview</h3>
+    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-none">
+      <h3 className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-4">Mood Overview</h3>
       <ResponsiveContainer width="100%" height={180}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>

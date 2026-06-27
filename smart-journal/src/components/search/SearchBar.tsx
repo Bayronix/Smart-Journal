@@ -65,8 +65,8 @@ export default function SearchBar() {
     <div ref={wrapperRef} className="relative w-full max-w-xl">
       <div
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border transition-colors',
-          focused ? 'border-indigo-600' : 'border-zinc-800'
+          'flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border transition-colors shadow-sm dark:shadow-none',
+          focused ? 'border-indigo-500' : 'border-slate-200 dark:border-zinc-800'
         )}
       >
         {loading ? <Loader2 size={15} className="text-zinc-500 animate-spin shrink-0" /> : <Search size={15} className="text-zinc-500 shrink-0" />}
@@ -76,7 +76,7 @@ export default function SearchBar() {
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => setFocused(true)}
           placeholder="Search journal… e.g. 'stressed about work last month'"
-          className="flex-1 bg-transparent text-sm text-zinc-300 placeholder-zinc-600 outline-none"
+          className="flex-1 bg-transparent text-sm text-slate-700 dark:text-zinc-300 placeholder-slate-300 dark:placeholder-zinc-600 outline-none"
         />
         {query && (
           <button onClick={clear} className="text-zinc-600 hover:text-zinc-400 transition-colors">
@@ -93,7 +93,7 @@ export default function SearchBar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 right-0 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50"
+            className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50"
           >
             {/* Results */}
             {results.length > 0 && (
@@ -106,8 +106,8 @@ export default function SearchBar() {
                     onClick={() => setFocused(false)}
                     className="block px-3 py-2.5 hover:bg-zinc-800 transition-colors border-t border-zinc-800/50 first:border-0"
                   >
-                    <p className="text-sm text-zinc-200 font-medium line-clamp-1">{r.entry.title || 'Untitled'}</p>
-                    <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">{truncate(r.snippet, 90)}</p>
+                    <p className="text-sm text-slate-800 dark:text-zinc-200 font-medium line-clamp-1">{r.entry.title || 'Untitled'}</p>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 line-clamp-1 mt-0.5">{truncate(r.snippet, 90)}</p>
                   </Link>
                 ))}
               </div>
@@ -121,7 +121,7 @@ export default function SearchBar() {
                   <button
                     key={s}
                     onClick={() => handleChange(s)}
-                    className="w-full text-left px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-2"
                   >
                     <Search size={12} className="text-zinc-600" />
                     {s}
