@@ -7,25 +7,32 @@ import { BookOpen, LayoutDashboard, PenSquare } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useJournalStore } from '@/store/journalStore';
 import { useThemeStore } from '@/store/themeStore';
+import { useLangStore, useT } from '@/store/langStore';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import LangToggle from '@/components/ui/LangToggle';
 import { cn } from '@/lib/utils';
-
-const MOBILE_NAV = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/journal', label: 'Journal', icon: BookOpen },
-  { href: '/journal/new', label: 'New', icon: PenSquare },
-];
+import type { Lang } from '@/lib/i18n';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const hydrate = useJournalStore((s) => s.hydrate);
   const { setTheme } = useThemeStore();
+  const { setLang } = useLangStore();
+  const t = useT();
   const pathname = usePathname();
 
   useEffect(() => {
     hydrate();
-    const saved = localStorage.getItem('sj_theme') as 'dark' | 'light' | null;
-    setTheme(saved === 'light' ? 'light' : 'dark');
-  }, [hydrate, setTheme]);
+    const savedTheme = localStorage.getItem('sj_theme') as 'dark' | 'light' | null;
+    setTheme(savedTheme === 'light' ? 'light' : 'dark');
+    const savedLang = localStorage.getItem('sj_lang') as Lang | null;
+    if (savedLang && ['en', 'uk', 'pl'].includes(savedLang)) setLang(savedLang);
+  }, [hydrate, setTheme, setLang]);
+
+  const MOBILE_NAV = [
+    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/journal', label: t.nav.journal, icon: BookOpen },
+    { href: '/journal/new', label: t.nav.newEntry, icon: PenSquare },
+  ];
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-200">
@@ -33,11 +40,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur sticky top-0 z-40 transition-colors duration-200">
+        <header className="lg:hidden flex items-center gap-2 px-3 py-2.5 border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur sticky top-0 z-40 transition-colors duration-200">
           <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
             <BookOpen size={14} className="text-white" />
           </div>
-          <span className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex-1">Smart Journal</span>
+          <span className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex-1">{t.appName}</span>
+          <LangToggle variant="compact" />
           <ThemeToggle />
         </header>
 

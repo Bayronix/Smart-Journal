@@ -4,10 +4,12 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, TrendingDown, Smile, Calendar } from 'lucide-react';
 import { useJournalStore } from '@/store/journalStore';
+import { useT } from '@/store/langStore';
 import { moodConfig } from '@/lib/utils';
 
 export default function StatsCards() {
   const entries = useJournalStore((s) => s.entries);
+  const t = useT();
 
   const stats = useMemo(() => {
     const analyzed = entries.filter((e) => e.analysis);
@@ -31,33 +33,35 @@ export default function StatsCards() {
     return { total: entries.length, avgStress, topMood, thisWeek };
   }, [entries]);
 
+  const topMoodLabel = stats.topMood
+    ? `${moodConfig[stats.topMood[0] as keyof typeof moodConfig]?.emoji} ${t.moods[stats.topMood[0] as keyof typeof t.moods] ?? stats.topMood[0]}`
+    : '—';
+
   const cards = [
     {
-      label: 'Total Entries',
+      label: t.stats.totalEntries,
       value: stats.total,
       icon: BookOpen,
       color: 'text-indigo-400',
       bg: 'bg-indigo-400/10',
     },
     {
-      label: 'This Week',
+      label: t.stats.thisWeek,
       value: stats.thisWeek,
       icon: Calendar,
       color: 'text-purple-400',
       bg: 'bg-purple-400/10',
     },
     {
-      label: 'Avg Stress',
+      label: t.stats.avgStress,
       value: stats.avgStress !== null ? `${stats.avgStress}/10` : '—',
       icon: TrendingDown,
       color: stats.avgStress !== null && stats.avgStress > 6 ? 'text-red-400' : 'text-emerald-400',
       bg: stats.avgStress !== null && stats.avgStress > 6 ? 'bg-red-400/10' : 'bg-emerald-400/10',
     },
     {
-      label: 'Top Mood',
-      value: stats.topMood
-        ? `${moodConfig[stats.topMood[0] as keyof typeof moodConfig]?.emoji} ${moodConfig[stats.topMood[0] as keyof typeof moodConfig]?.label}`
-        : '—',
+      label: t.stats.topMood,
+      value: topMoodLabel,
       icon: Smile,
       color: 'text-yellow-400',
       bg: 'bg-yellow-400/10',

@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useJournalStore } from '@/store/journalStore';
+import { useT } from '@/store/langStore';
 import JournalEditor from '@/components/journal/JournalEditor';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { formatDateLong } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 import type { JournalEntry } from '@/types';
 
 export default function EntryPage() {
@@ -18,6 +18,7 @@ export default function EntryPage() {
   const hydrated = useJournalStore((s) => s.hydrated);
   const getEntry = useJournalStore((s) => s.getEntry);
   const deleteEntry = useJournalStore((s) => s.deleteEntry);
+  const t = useT();
   const [entry, setEntry] = useState<JournalEntry | undefined>(undefined);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [notFoundState, setNotFoundState] = useState(false);
@@ -25,19 +26,16 @@ export default function EntryPage() {
   useEffect(() => {
     if (!hydrated) return;
     const found = getEntry(id);
-    if (!found) {
-      setNotFoundState(true);
-    } else {
-      setEntry(found);
-    }
+    if (!found) setNotFoundState(true);
+    else setEntry(found);
   }, [hydrated, id, getEntry]);
 
   if (notFoundState) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <p className="text-zinc-500">Entry not found.</p>
-        <Link href="/journal" className="text-indigo-400 hover:text-indigo-300 text-sm">
-          Back to Journal
+        <p className="text-slate-500 dark:text-zinc-500">{t.notFound}</p>
+        <Link href="/journal" className="text-indigo-500 hover:text-indigo-400 text-sm">
+          {t.editor.backToJournal}
         </Link>
       </div>
     );
@@ -59,17 +57,15 @@ export default function EntryPage() {
   return (
     <div className="min-h-screen">
       <div className="px-4 sm:px-6 pt-6 max-w-3xl mx-auto flex items-center justify-between">
-        <Link
-          href="/journal"
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+        <Link href="/journal"
+          className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-200 transition-colors"
         >
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={14} /> {t.editor.back}
         </Link>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-zinc-600">{formatDateLong(entry.createdAt)}</span>
-          <button
-            onClick={() => setDeleteOpen(true)}
-            className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-all"
+          <span className="text-xs text-slate-500 dark:text-zinc-500">{formatDateLong(entry.createdAt)}</span>
+          <button onClick={() => setDeleteOpen(true)}
+            className="p-1.5 rounded-md text-slate-500 dark:text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-400/10 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -78,17 +74,13 @@ export default function EntryPage() {
 
       <JournalEditor entry={entry} />
 
-      <Modal
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="Delete entry"
-      >
-        <p className="text-sm text-zinc-400 mb-6">
-          Are you sure you want to delete &ldquo;{entry.title || 'this entry'}&rdquo;? This cannot be undone.
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title={t.editor.deleteEntry}>
+        <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6">
+          {t.editor.deleteConfirm(entry.title || t.journal.untitled)}
         </p>
         <div className="flex gap-3 justify-end">
-          <Button variant="secondary" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-          <Button variant="danger" onClick={handleDelete}>Delete</Button>
+          <Button variant="secondary" onClick={() => setDeleteOpen(false)}>{t.editor.cancel}</Button>
+          <Button variant="danger" onClick={handleDelete}>{t.editor.delete}</Button>
         </div>
       </Modal>
     </div>

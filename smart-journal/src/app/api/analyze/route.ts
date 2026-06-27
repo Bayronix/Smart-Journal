@@ -1,56 +1,167 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AIAnalysis, Mood } from '@/types';
 
-// ── Local keyword-based fallback ──────────────────────────────────────────────
+// ── Trilingual keyword lists (English + Ukrainian + Polish) ──────────────────
 
 const MOOD_KEYWORDS: Record<Mood, string[]> = {
-  happy:      ['happy', 'joy', 'great', 'amazing', 'wonderful', 'love', 'excited', 'glad', 'smile', 'good', 'positive', 'fun', 'laugh', 'celebrate'],
-  sad:        ['sad', 'unhappy', 'cry', 'depressed', 'miserable', 'lonely', 'miss', 'grief', 'sorrow', 'hurt', 'pain', 'lost', 'hopeless'],
-  anxious:    ['anxious', 'anxiety', 'stress', 'stressed', 'worry', 'worried', 'nervous', 'panic', 'fear', 'scared', 'overwhelm', 'pressure', 'deadline'],
-  motivated:  ['motivated', 'productive', 'focus', 'goal', 'achieve', 'progress', 'success', 'drive', 'ambition', 'determined', 'energy', 'work', 'build'],
-  frustrated: ['frustrated', 'angry', 'annoyed', 'irritated', 'upset', 'mad', 'stupid', 'hate', 'ugh', 'fail', 'wrong', 'broken'],
-  grateful:   ['grateful', 'thankful', 'blessed', 'appreciate', 'gratitude', 'fortunate', 'lucky', 'thank'],
-  excited:    ['excited', 'thrilled', 'enthusiastic', 'pumped', 'eager', 'cant wait', "can't wait", 'looking forward', 'amazing', 'incredible'],
-  neutral:    ['okay', 'fine', 'normal', 'usual', 'regular', 'nothing special', 'same'],
+  happy: [
+    // EN
+    'happy', 'joy', 'joyful', 'great', 'amazing', 'wonderful', 'love', 'glad',
+    'smile', 'good', 'positive', 'fun', 'laugh', 'celebrate', 'fantastic', 'awesome',
+    // UA
+    'радість', 'щасливий', 'щастя', 'чудово', 'прекрасно', 'радий', 'відмінно',
+    'добрий настрій', 'позитив', 'весело', 'круто', 'кайф', 'кайфую', 'чудовий',
+    'гарно', 'приємно', 'задоволений', 'насолоджуюся', 'радую', 'класно',
+    // PL
+    'szczęśliwy', 'radość', 'wspaniale', 'świetnie', 'cudownie', 'miło', 'dobry nastrój',
+    'pozytywnie', 'wesoło', 'super', 'fantastycznie', 'cieszę się', 'uśmiecham',
+  ],
+  sad: [
+    // EN
+    'sad', 'unhappy', 'cry', 'crying', 'depressed', 'miserable', 'lonely',
+    'miss', 'grief', 'sorrow', 'hurt', 'pain', 'hopeless', 'heartbreak',
+    // UA
+    'сумно', 'сум', 'плачу', 'сумний', 'горе', 'смуток', 'тужу', 'нудно',
+    'депресія', 'зневіра', 'погано', 'пригнічений', 'самотній', 'самотньо',
+    'важко на душі', 'розбитий', 'журба', 'скучно', 'нещасний',
+    // PL
+    'smutny', 'smutek', 'płaczę', 'płakać', 'depresja', 'samotny', 'przygnębiony',
+    'żal', 'ból', 'beznadziejny', 'nieszczęśliwy', 'tęsknię', 'brak mi',
+  ],
+  anxious: [
+    // EN
+    'anxious', 'anxiety', 'stress', 'stressed', 'worry', 'worried', 'nervous',
+    'panic', 'fear', 'scared', 'overwhelm', 'pressure', 'deadline', 'tense',
+    // UA
+    'тривога', 'тривожно', 'хвилююся', 'нервую', 'стрес', 'нервово', 'страх',
+    'боюся', 'переживаю', 'паніка', 'хвилювання', 'тривожний', 'напружений',
+    'не можу заспокоїтися', 'турбуюся', 'занепокоєний', 'дедлайн', 'терміново',
+    // PL
+    'stres', 'stresujący', 'martwię się', 'niepokój', 'nerwowy', 'panika', 'strach',
+    'przestraszony', 'boję się', 'deadline', 'pilnie', 'przytłoczony', 'zaniepokojony',
+  ],
+  motivated: [
+    // EN
+    'motivated', 'productive', 'focus', 'goal', 'achieve', 'progress', 'success',
+    'drive', 'ambitious', 'determined', 'energy', 'work', 'build', 'create',
+    // UA
+    'мотивація', 'мотивований', 'ціль', 'план', 'продуктивно', 'результат',
+    'досягнення', 'вперед', 'рухаюся', 'прогрес', 'успіх', 'роблю', 'виконую',
+    'ефективно', 'натхнення', 'натхненний', 'цілеспрямований', 'зосереджений',
+    // PL
+    'zmotywowany', 'cel', 'plan', 'produktywny', 'sukces', 'postęp', 'osiągnięcia',
+    'skupiony', 'ambicja', 'determinacja', 'działam', 'tworzę', 'buduję',
+  ],
+  frustrated: [
+    // EN
+    'frustrated', 'angry', 'annoyed', 'irritated', 'upset', 'mad', 'hate',
+    'fail', 'wrong', 'broken', 'stuck', 'useless', 'tired of',
+    // UA
+    'злий', 'злість', 'дратує', 'розчарований', 'розчарування', 'жах',
+    'кошмар', 'жахливо', 'набридло', 'не можу', 'не виходить', 'безглуздо',
+    'злюся', 'роздратований', 'не вдається', 'провал', 'невдача', 'бісить',
+  ],
+  grateful: [
+    // EN
+    'grateful', 'thankful', 'blessed', 'appreciate', 'gratitude', 'fortunate',
+    'lucky', 'thank', 'privilege',
+    // UA
+    'вдячний', 'дякую', 'вдячність', 'ціную', 'цінну', 'щасливий мати',
+    'пощастило', 'дякую богу', 'ціною це', 'вдячна', 'доброта',
+    // PL
+    'wdzięczny', 'dziękuję', 'wdzięczność', 'cenię', 'doceniam', 'szczęście',
+    'błogosławiony', 'miałem szczęście', 'jestem wdzięczny',
+  ],
+  excited: [
+    // EN
+    'excited', 'thrilled', 'enthusiastic', 'pumped', 'eager', 'amazing',
+    'incredible', 'cant wait', "can't wait", 'looking forward', 'wow',
+    // UA
+    'захоплення', 'захоплений', 'не можу дочекатися', 'з нетерпінням',
+    'цікаво', 'цікавий', 'неймовірно', 'вражає', 'супер', 'захоплюєтися',
+    'в захваті', 'очікую', 'хочу', 'мрію',
+    // PL
+    'podekscytowany', 'niecierpliwie czekam', 'z niecierpliwością', 'ciekawy',
+    'niesamowite', 'zachwycony', 'czekam z niecierpliwością', 'wow',
+  ],
+  neutral: [
+    // EN
+    'okay', 'fine', 'normal', 'usual', 'regular', 'alright',
+    // UA
+    'нормально', 'звичайно', 'так само', 'нічого особливого', 'якось',
+    'ок', 'нейтрально', 'буденно', 'як завжди',
+    // PL
+    'normalnie', 'zwyczajnie', 'tak samo', 'nic szczególnego', 'w porządku',
+    'ok', 'neutralnie', 'jak zwykle',
+  ],
 };
 
-const STRESS_WORDS = ['stress', 'deadline', 'pressure', 'overwhelm', 'panic', 'crisis', 'urgent', 'fail', 'anxiety', 'worry', 'fear', 'problem', 'issue', 'trouble'];
-const CALM_WORDS   = ['relax', 'calm', 'peace', 'rest', 'breathe', 'meditate', 'happy', 'joy', 'grateful', 'good'];
+// High-stress words raise score, calm words lower it
+const STRESS_HIGH: string[] = [
+  // EN
+  'stress', 'deadline', 'pressure', 'overwhelm', 'panic', 'crisis', 'urgent',
+  'fail', 'anxiety', 'worry', 'fear', 'problem', 'trouble', 'terrible',
+  'exhausted', 'burned out', 'falling apart', 'can\'t cope', 'losing it',
+  // UA
+  'стрес', 'дедлайн', 'паніка', 'криза', 'терміново', 'провал', 'тривога',
+  'страх', 'проблема', 'жах', 'не можу', 'важко', 'складно', 'перевантажений',
+  'виснажений', 'втома', 'не справляюся', 'кошмар', 'жахливо', 'катастрофа',
+  'безнадія', 'безвихідь', 'зламаний', 'розбитий', 'нервовий зрив', 'плачу',
+  // PL
+  'stres', 'deadline', 'panika', 'kryzys', 'pilnie', 'niepowodzenie', 'niepokój',
+  'strach', 'problem', 'koszmar', 'okropnie', 'trudno', 'przepracowany',
+  'zmęczenie', 'nie daję rady', 'katastrofa', 'rozpadać się', 'płaczę',
+];
+const STRESS_LOW: string[] = [
+  // EN
+  'relax', 'calm', 'peace', 'rest', 'breathe', 'meditate', 'happy', 'joy',
+  'grateful', 'good', 'great', 'wonderful', 'enjoying', 'vacation', 'holiday',
+  // UA
+  // PL calm
+  'relaks', 'spokój', 'odpoczynek', 'medytacja', 'szczęśliwy', 'radość',
+  'wdzięczny', 'dobrze', 'świetnie', 'cieszę się', 'przyjemnie', 'harmonia',
+  // UA calm
+  'відпочинок', 'спокій', 'розслабляюся', 'медитація', 'щасливий', 'радість',
+  'добре', 'вдячний', 'відпочиваю', 'насолоджуюся', 'спокійно', 'гармонія',
+  'рівновага', 'задоволений', 'приємно', 'легко', 'вільно',
+];
 
 const TOPIC_PATTERNS: [RegExp, string][] = [
-  [/\b(work|job|office|boss|colleague|meeting|project|deadline|career)\b/i, 'work'],
-  [/\b(family|mom|dad|parent|sister|brother|child|kids|home)\b/i, 'family'],
-  [/\b(friend|social|party|people|relationship|dating|love|partner)\b/i, 'relationships'],
-  [/\b(health|sick|exercise|gym|sleep|tired|energy|body|diet|food)\b/i, 'health'],
-  [/\b(money|finance|bills|debt|salary|spend|budget|cost)\b/i, 'finances'],
-  [/\b(school|study|learn|class|exam|university|course|grade)\b/i, 'education'],
-  [/\b(future|goal|plan|dream|hope|change|decision|choice)\b/i, 'personal growth'],
-  [/\b(feel|emotion|mind|mental|thought|think|believe|reflect)\b/i, 'self-reflection'],
-  [/\b(travel|trip|adventure|place|city|country|vacation)\b/i, 'travel'],
-  [/\b(creative|art|music|write|create|design|project|idea)\b/i, 'creativity'],
+  [/\b(work|job|office|boss|colleague|meeting|project|deadline|career|робота|офіс|колега|зустріч|проект|дедлайн|кар'єра|начальник|праця|praca|szef|kolega|spotkanie|projekt|kariera)\b/i, 'робота / praca'],
+  [/\b(family|mom|dad|parent|sister|brother|child|kids|home|сім'я|мама|тато|батьки|сестра|брат|дитина|діти|родина|rodzina|mama|tata|siostra|brat|dziecko|dom)\b/i, 'сім\'я / rodzina'],
+  [/\b(friend|social|relationship|dating|love|partner|друг|друзі|стосунки|любов|партнер|кохання|дружба|przyjaciel|relacja|miłość|randka|związek)\b/i, 'стосунки / relacje'],
+  [/\b(health|sick|exercise|gym|sleep|tired|energy|body|diet|food|здоров'я|хвороба|спорт|сон|втома|їжа|zdrowie|choroba|sport|sen|zmęczenie|jedzenie)\b/i, 'здоров\'я / zdrowie'],
+  [/\b(money|finance|bills|debt|salary|spend|budget|гроші|фінанси|борг|зарплата|витрати|кошти|pieniądze|finanse|dług|pensja|budżet)\b/i, 'фінанси / finanse'],
+  [/\b(school|study|learn|exam|university|course|grade|навчання|університет|школа|іспит|оцінки|курс|вчуся)\b/i, 'навчання'],
+  [/\b(future|goal|plan|dream|hope|change|decision|ціль|план|мрія|зміни|рішення|майбутнє|надія)\b/i, 'особистий розвиток'],
+  [/\b(feel|emotion|mind|thought|think|believe|reflect|відчуваю|думаю|вірю|роздуми|емоції|внутрішнє)\b/i, 'саморефлексія'],
+  [/\b(travel|trip|adventure|city|country|vacation|подорож|поїздка|місто|країна|відпустка|мандрівка)\b/i, 'подорожі'],
+  [/\b(creative|art|music|write|create|design|idea|творчість|мистецтво|музика|пишу|ідея|малюю|творю)\b/i, 'творчість'],
 ];
 
 const INSIGHTS: Record<Mood, string[]> = {
-  happy:      ['Your entry radiates positive energy and contentment. This state of happiness often comes from alignment between your values and daily actions.', 'You seem to be in a good flow right now. Positive emotions like these broaden your thinking and build resilience for harder times.'],
-  sad:        ['Your entry reflects a period of emotional pain. Acknowledging sadness is healthy — it signals that something meaningful matters to you.', 'Difficult emotions like these are temporary and serve a purpose. They often point toward what needs attention or healing in your life.'],
-  anxious:    ['Your entry shows signs of stress and worry. Anxiety often points to areas where we feel uncertain or out of control.', 'The concerns you are carrying seem significant. Anxiety is your mind trying to prepare you — the key is channeling it productively rather than ruminating.'],
-  motivated:  ['Your entry shows strong drive and focus. This motivated state is valuable — your mind is primed for productive action and problem-solving.', 'You are clearly energized and goal-oriented right now. This kind of momentum is worth capturing and building on.'],
-  frustrated: ['Your entry reveals frustration, which often masks deeper feelings of helplessness or unmet expectations.', 'Frustration is a signal that something in your environment is misaligned with your values or needs. It deserves to be explored, not just vented.'],
-  grateful:   ['Your entry is filled with gratitude, which research consistently links to greater wellbeing and life satisfaction.', 'Gratitude shifts attention toward abundance rather than scarcity. This perspective you have right now is genuinely protective for mental health.'],
-  excited:    ['Your entry buzzes with enthusiasm and anticipation. This excited state fuels creativity and openness to new experiences.', 'You are clearly energized by what lies ahead. This excitement is a powerful motivator — use it while it is strong.'],
-  neutral:    ['Your entry reflects a balanced, measured state of mind. Neutral days are underrated — they provide the stability that more intense days cannot.', 'A calm, reflective mood like this is often when the most honest self-assessment happens. There is value in this quieter emotional space.'],
+  happy:      ['Твій запис випромінює позитивну енергію. Цей стан щастя часто виникає, коли наші дії відповідають нашим цінностям.', 'Ти зараз у гарному потоці. Позитивні емоції розширюють мислення і будують стійкість на складніші часи.'],
+  sad:        ['Твій запис відображає емоційний біль. Визнання суму — це здорово: воно сигналізує, що щось важливе для тебе має значення.', 'Складні емоції тимчасові і мають сенс. Вони часто вказують на те, що потребує уваги або зцілення в твоєму житті.'],
+  anxious:    ['Твій запис показує ознаки стресу і тривоги. Занепокоєння часто вказує на сфери, де ти відчуваєш невизначеність або брак контролю.', 'Занепокоєння — це сигнал твого розуму готуватися. Ключ у тому, щоб спрямувати його продуктивно, а не застрявати в роздумах.'],
+  motivated:  ['Твій запис показує сильну цілеспрямованість. Цей мотивований стан цінний — твій розум налаштований на продуктивні дії.', 'Ти явно енергійний і зосереджений на цілях. Такий імпульс варто підхопити і розвинути.'],
+  frustrated: ['Твій запис виявляє розчарування, яке часто приховує глибші почуття безпорадності або незадоволених очікувань.', 'Розчарування — сигнал того, що щось у твоєму середовищі не відповідає твоїм цінностям. Це варто дослідити, а не просто виплеснути.'],
+  grateful:   ['Твій запис сповнений вдячності, яка стабільно пов\'язана з більшим добробутом і задоволенням від життя.', 'Вдячність перемикає увагу з нестачі на достаток. Ця перспектива справді захищає психічне здоров\'я.'],
+  excited:    ['Твій запис наповнений ентузіазмом та очікуванням. Цей стан збудження живить творчість і відкритість до нового.', 'Ти явно наснажений тим, що попереду. Це збудження — потужний мотиватор, використай його поки воно сильне.'],
+  neutral:    ['Твій запис відображає збалансований, виважений стан думок. Нейтральні дні недооцінені — вони дають стабільність, якої не можуть дати інтенсивніші дні.', 'Спокійний, рефлексивний настрій — це час, коли відбувається найбільш чесна самооцінка. Є цінність у цьому тихішому емоційному просторі.'],
 };
 
 const ADVICE: Record<Mood, string[]> = {
-  happy:      ['Capture what made today good so you can recreate these conditions intentionally.', 'Share this positive energy with someone who might need it today.'],
-  sad:        ['Give yourself permission to feel this without judgment. Try writing a few sentences about what specifically is hurting.', 'Reach out to one person you trust, even just to say hello. Connection is a powerful antidote to sadness.'],
-  anxious:    ['Try the 5-4-3-2-1 grounding technique: name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste.', 'Write down your top worry and one small step you could take toward it today — action reduces anxiety better than thinking.'],
-  motivated:  ['Strike while the iron is hot: pick your most important task and work on it for 90 focused minutes right now.', 'Set a clear outcome for this energy so it does not scatter — what is the one thing that would make today a success?'],
-  frustrated: ['Before reacting, pause and write down what specifically triggered this feeling and what you actually need.', 'Physical movement — even a 10-minute walk — can break the frustration cycle and give you fresh perspective.'],
-  grateful:   ['Write down three specific things you are grateful for with detail — specificity amplifies the effect.', 'Consider expressing appreciation directly to someone who has made a positive difference in your life recently.'],
-  excited:    ['Channel this excitement into concrete planning — write down three specific actions you can take to move forward.', 'Share your enthusiasm with someone who will encourage you. Excitement grows when it is witnessed.'],
-  neutral:    ['Use this calm state for reflection: what has been working well lately, and what would you like to change?', 'A neutral day is a good day to build habits — low emotion means lower resistance to starting something new.'],
+  happy:      ['Запиши, що зробило сьогодні таким гарним, щоб ти міг навмисно відтворити ці умови.', 'Поділися цією позитивною енергією з кимось, хто може потребувати її сьогодні.'],
+  sad:        ['Дозволь собі відчувати це без осуду. Спробуй написати кілька речень про те, що конкретно болить.', 'Зв\'яжися з однією людиною, якій довіряєш — навіть просто щоб сказати привіт. Зв\'язок — потужний засіб від суму.'],
+  anxious:    ['Спробуй техніку "5-4-3-2-1": назви 5 речей, які бачиш, 4 — що можеш торкнутися, 3 — що чуєш, 2 — що відчуваєш на запах, 1 — на смак.', 'Запиши своє головне занепокоєння і один маленький крок, який можеш зробити сьогодні — дія зменшує тривогу краще за роздуми.'],
+  motivated:  ['Дій поки є запал: вибери своє найважливіше завдання і попрацюй над ним 90 зосереджених хвилин прямо зараз.', 'Постав чітку мету для цієї енергії — що одне зробить сьогодні успішним?'],
+  frustrated: ['Перш ніж реагувати, зупинись і запиши, що конкретно викликало це відчуття і чого ти насправді потребуєш.', 'Фізичний рух — навіть 10 хвилин прогулянки — може розірвати цикл розчарування і дати свіжий погляд.'],
+  grateful:   ['Запиши три конкретні речі, за які ти вдячний — конкретність посилює ефект.', 'Розглянь можливість висловити подяку безпосередньо комусь, хто позитивно вплинув на твоє життя нещодавно.'],
+  excited:    ['Спрямуй це збудження в конкретне планування — запиши три дії, які можеш зробити щоб рухатися вперед.', 'Поділися своїм ентузіазмом з кимось, хто тебе підтримає. Збудження росте, коли ним діляться.'],
+  neutral:    ['Використай цей спокійний стан для рефлексії: що добре працювало останнім часом і що хотів би змінити?', 'Нейтральний день — гарний день для формування звичок: низька емоційність означає менший опір для початку чогось нового.'],
 };
+
+// ── Detection functions ───────────────────────────────────────────────────────
 
 function detectMood(text: string): Mood {
   const lower = text.toLowerCase();
@@ -60,18 +171,25 @@ function detectMood(text: string): Mood {
   };
   for (const [mood, keywords] of Object.entries(MOOD_KEYWORDS) as [Mood, string[]][]) {
     for (const kw of keywords) {
-      if (lower.includes(kw)) scores[mood]++;
+      if (lower.includes(kw)) scores[mood] += kw.length > 5 ? 2 : 1; // longer phrases = stronger signal
     }
   }
-  const top = (Object.entries(scores) as [Mood, number][]).sort((a, b) => b[1] - a[1])[0];
-  return top[1] > 0 ? top[0] : 'neutral';
+  const sorted = (Object.entries(scores) as [Mood, number][]).sort((a, b) => b[1] - a[1]);
+  // Return top mood only if it clearly dominates; otherwise neutral
+  if (sorted[0][1] === 0) return 'neutral';
+  if (sorted[0][0] === 'neutral' && sorted[1][1] > 0) return sorted[1][0]; // neutral shouldn't win over real mood
+  return sorted[0][0];
 }
 
 function detectStress(text: string): number {
   const lower = text.toLowerCase();
-  let score = 5;
-  for (const w of STRESS_WORDS) if (lower.includes(w)) score++;
-  for (const w of CALM_WORDS)   if (lower.includes(w)) score--;
+  let score = 3; // Start lower than 5 so default leans calm
+  for (const w of STRESS_HIGH) {
+    if (lower.includes(w)) score += w.length > 8 ? 2 : 1; // longer phrases weigh more
+  }
+  for (const w of STRESS_LOW) {
+    if (lower.includes(w)) score -= 1;
+  }
   return Math.max(1, Math.min(10, score));
 }
 
@@ -81,7 +199,7 @@ function extractTopics(text: string): string[] {
     if (pattern.test(text) && !found.includes(label)) found.push(label);
     if (found.length >= 5) break;
   }
-  if (found.length === 0) found.push('personal reflection');
+  if (found.length === 0) found.push('особисті роздуми');
   return found;
 }
 
@@ -112,7 +230,6 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
-    // Use Claude if API key is present and valid-looking
     if (apiKey && apiKey.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
@@ -122,12 +239,12 @@ export async function POST(request: NextRequest) {
           max_tokens: 1024,
           messages: [{
             role: 'user',
-            content: `You are a psychologically-informed journal analyst. Analyze this journal entry and return a JSON object with:
+            content: `You are a psychologically-informed journal analyst. The user writes in Ukrainian or English — respond in the same language. Analyze this journal entry and return a JSON object:
 - mood: one of: happy | sad | anxious | neutral | motivated | frustrated | grateful | excited
-- stressLevel: integer 1-10
-- keyTopics: array of 3-5 short topic strings
-- insights: 2-3 sentences of psychological insight
-- advice: 1-2 actionable sentences
+- stressLevel: integer 1-10 (be accurate — don't default to 5)
+- keyTopics: array of 3-5 short topic strings in the user's language
+- insights: 2-3 sentences of genuine psychological insight
+- advice: 1-2 concrete actionable sentences
 
 Title: ${title || '(untitled)'}
 Content: ${content}
@@ -143,7 +260,6 @@ Return ONLY valid JSON. No markdown.`,
       }
     }
 
-    // Local fallback — works without any API key
     return NextResponse.json({ analysis: localAnalyze(title, content) });
 
   } catch (error) {

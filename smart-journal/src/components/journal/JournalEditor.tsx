@@ -9,6 +9,7 @@ import { useJournalStore } from '@/store/journalStore';
 import { analyzeEntry } from '@/services/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { useT } from '@/store/langStore';
 import AIInsights from './AIInsights';
 
 interface Props {
@@ -215,6 +216,7 @@ export default function JournalEditor({ entry }: Props) {
     }
   };
 
+  const t = useT();
   const fullText = (content + (transcript ? ' ' + transcript : '')).trim();
   const wordCount = fullText.split(/\s+/).filter(Boolean).length;
 
@@ -226,7 +228,7 @@ export default function JournalEditor({ entry }: Props) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Entry title…"
+          placeholder={t.editor.titlePlaceholder}
           className="bg-transparent text-2xl font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-full border-none focus:ring-0"
         />
 
@@ -247,7 +249,7 @@ export default function JournalEditor({ entry }: Props) {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-              placeholder="Add tag…"
+              placeholder={t.editor.tagPlaceholder}
               className="bg-transparent text-xs text-slate-700 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-24 border-b border-slate-200 dark:border-zinc-800 focus:border-indigo-500 pb-0.5 transition-colors"
             />
             <button onClick={addTag} className="text-slate-600 dark:text-zinc-200 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
@@ -266,7 +268,7 @@ export default function JournalEditor({ entry }: Props) {
             onChange={(e) => {
               if (!recording) setContent(e.target.value);
             }}
-            placeholder="Start writing… or tap the mic to speak"
+            placeholder={t.editor.contentPlaceholder}
             className="w-full min-h-[320px] bg-transparent text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 text-base leading-relaxed outline-none resize-none border-none focus:ring-0"
           />
 
@@ -292,14 +294,14 @@ export default function JournalEditor({ entry }: Props) {
               className="absolute top-0 right-0 flex items-center gap-2 text-xs text-red-400"
             >
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              Recording…
+              {t.editor.recording}
             </motion.div>
           )}
         </div>
 
         {/* Toolbar */}
         <div className="flex items-center gap-2 flex-wrap border-t border-slate-200 dark:border-zinc-800 pt-4">
-          <span className="text-xs text-slate-600 dark:text-zinc-200">{wordCount} word{wordCount !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-slate-600 dark:text-zinc-200">{t.editor.words(wordCount)}</span>
 
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             {/* Voice button */}
@@ -310,7 +312,7 @@ export default function JournalEditor({ entry }: Props) {
                 onClick={recording ? stopRecording : startRecording}
               >
                 {recording ? <MicOff size={14} /> : <Mic size={14} />}
-                {recording ? 'Stop' : 'Dictate'}
+                {recording ? t.editor.stopRecording : t.editor.dictate}
               </Button>
             )}
 
@@ -323,7 +325,7 @@ export default function JournalEditor({ entry }: Props) {
               disabled={!fullText}
             >
               <Brain size={14} />
-              {analyzing ? 'Analyzing…' : 'Analyze'}
+              {analyzing ? t.editor.analyzing : t.editor.analyze}
             </Button>
 
             {/* Save */}
@@ -335,7 +337,7 @@ export default function JournalEditor({ entry }: Props) {
               disabled={!fullText}
             >
               <Save size={14} />
-              {saved ? 'Saved!' : 'Save'}
+              {saved ? t.editor.saved : t.editor.save}
             </Button>
           </div>
         </div>

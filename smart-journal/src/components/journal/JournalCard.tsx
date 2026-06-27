@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Trash2 } from 'lucide-react';
 import type { JournalEntry } from '@/types';
 import { formatDate, formatRelative, moodConfig, truncate } from '@/lib/utils';
+import { useT } from '@/store/langStore';
 import Badge from '@/components/ui/Badge';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
   const mood = entry.analysis ? moodConfig[entry.analysis.mood] : null;
+  const t = useT();
 
   return (
     <motion.div
@@ -28,7 +30,7 @@ export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
       <Link href={`/journal/${entry.id}`} className="block p-5">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm leading-snug group-hover:text-indigo-600 dark:group-hover:text-white transition-colors line-clamp-1">
-            {entry.title || 'Untitled Entry'}
+            {entry.title || t.journal.untitled}
           </h3>
           {mood && (
             <span className={`shrink-0 text-base ${mood.color}`} title={mood.label}>
