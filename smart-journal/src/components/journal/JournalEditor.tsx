@@ -64,6 +64,7 @@ export default function JournalEditor({ entry }: Props) {
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analysis, setLocalAnalysis] = useState(entry?.analysis ?? null);
   const [saved, setSaved] = useState(false);
   const [currentId, setCurrentId] = useState(entry?.id ?? '');
@@ -91,29 +92,46 @@ export default function JournalEditor({ entry }: Props) {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    let finalTranscript = '';
-
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
+      let finalText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscript += result[0].transcript + ' ';
+          finalText += result[0].transcript;
         } else {
           interim += result[0].transcript;
         }
       }
-      setTranscript(interim);
-      if (finalTranscript) {
-        setContent((prev) => prev + finalTranscript);
-        finalTranscript = '';
+      // Save finalText immediately using a const so the closure captures the correct value
+      if (finalText) {
+        const captured = finalText;
+        setContent((prev) => {
+          const sep = prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '';
+          return prev + sep + captured;
+        });
       }
+      setTranscript(interim);
     };
 
-    recognition.onerror = () => setRecording(false);
-    recognition.onend = () => {
+    recognition.onerror = () => {
       setRecording(false);
       setTranscript('');
+    };
+
+    recognition.onend = () => {
+      // Save any interim transcript that was left when recording ended
+      setTranscript((currentTranscript) => {
+        if (currentTranscript.trim()) {
+          const captured = currentTranscript.trim();
+          setContent((prev) => {
+            const sep = prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '';
+            return prev + sep + captured;
+          });
+        }
+        return '';
+      });
+      setRecording(false);
     };
 
     recognition.start();
@@ -122,9 +140,19 @@ export default function JournalEditor({ entry }: Props) {
   }, []);
 
   const stopRecording = useCallback(() => {
+    // Save any interim transcript before stopping
+    setTranscript((currentTranscript) => {
+      if (currentTranscript.trim()) {
+        const captured = currentTranscript.trim();
+        setContent((prev) => {
+          const sep = prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '';
+          return prev + sep + captured;
+        });
+      }
+      return '';
+    });
     recognitionRef.current?.stop();
     setRecording(false);
-    setTranscript('');
   }, []);
 
   const addTag = () => {
@@ -157,30 +185,38 @@ export default function JournalEditor({ entry }: Props) {
   };
 
   const handleAnalyze = async () => {
-    const id = currentId || entry?.id;
-    if (!content.trim()) return;
+    // Use full visible content (including any unsaved interim transcript)
+    const fullContent = (content + (transcript ? ' ' + transcript : '')).trim();
+    if (!fullContent) return;
+
+    // Commit the full content to state first
+    if (fullContent !== content) setContent(fullContent);
+
     setAnalyzing(true);
+    setAnalyzeError(null);
     try {
-      // Save first if not saved
+      const id = currentId || entry?.id;
       if (!id) {
-        const newEntry = addEntry({ title, content, tags });
+        const newEntry = addEntry({ title, content: fullContent, tags });
         setCurrentId(newEntry.id);
-        const result = await analyzeEntry({ title, content });
+        const result = await analyzeEntry({ title, content: fullContent });
         setAnalysis(newEntry.id, result);
         setLocalAnalysis(result);
       } else {
-        const result = await analyzeEntry({ title, content });
+        const result = await analyzeEntry({ title, content: fullContent });
         setAnalysis(id, result);
         setLocalAnalysis(result);
       }
     } catch (err) {
-      console.error('Analysis failed:', err);
+      const msg = err instanceof Error ? err.message : 'Analysis failed';
+      setAnalyzeError(msg);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const fullText = (content + (transcript ? ' ' + transcript : '')).trim();
+  const wordCount = fullText.split(/\s+/).filter(Boolean).length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -284,7 +320,7 @@ export default function JournalEditor({ entry }: Props) {
               size="sm"
               loading={analyzing}
               onClick={handleAnalyze}
-              disabled={!content.trim()}
+              disabled={!fullText}
             >
               <Brain size={14} />
               {analyzing ? 'Analyzing…' : 'Analyze'}
@@ -296,13 +332,29 @@ export default function JournalEditor({ entry }: Props) {
               size="sm"
               loading={saving}
               onClick={handleSave}
-              disabled={!content.trim()}
+              disabled={!fullText}
             >
               <Save size={14} />
               {saved ? 'Saved!' : 'Save'}
             </Button>
           </div>
         </div>
+
+        {/* Analyze error */}
+        <AnimatePresence>
+          {analyzeError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm"
+            >
+              <span className="shrink-0">⚠</span>
+              <span>{analyzeError}</span>
+              <button onClick={() => setAnalyzeError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* AI Insights */}
         <AnimatePresence>
