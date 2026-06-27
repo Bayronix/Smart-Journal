@@ -5,6 +5,7 @@ import MoodChart from '@/components/dashboard/MoodChart';
 import WeeklySummary from '@/components/dashboard/WeeklySummary';
 import SearchBar from '@/components/search/SearchBar';
 import RecentEntries from '@/components/journal/RecentEntries';
+import WeatherWidget from '@/components/weather/WeatherWidget';
 import { useT } from '@/store/langStore';
 
 export default function DashboardPage() {
@@ -17,7 +18,16 @@ export default function DashboardPage() {
       </div>
 
       <SearchBar />
-      <StatsCards />
+
+      {/* Weather + Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1">
+          <WeatherWidget />
+        </div>
+        <div className="lg:col-span-2">
+          <StatsCards />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2"><MoodChart /></div>
