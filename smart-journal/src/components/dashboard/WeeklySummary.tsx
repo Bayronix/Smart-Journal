@@ -38,7 +38,7 @@ export default function WeeklySummary() {
     : '';
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+    <div className="bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl overflow-hidden shadow-sm dark:shadow-none">
       <div className="flex items-center gap-3 px-5 py-4 cursor-pointer select-none"
         onClick={() => weeklySummary && setExpanded(!expanded)}
       >

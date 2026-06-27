@@ -76,7 +76,7 @@ export default function StatsCards() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.07 }}
-          className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm dark:shadow-none"
+          className="bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl p-4 shadow-sm dark:shadow-none"
         >
           <div className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center mb-3`}>
             <card.icon size={15} className={card.color} />

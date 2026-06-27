@@ -44,7 +44,7 @@ export default function MoodChart() {
 
   if (data.length < 2) {
     return (
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-none">
+      <div className="bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl p-5 shadow-sm dark:shadow-none">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-3">{t.chart.title}</h3>
         <p className="text-slate-600 dark:text-zinc-200 text-sm py-8 text-center">{t.chart.empty}</p>
       </div>
@@ -52,7 +52,7 @@ export default function MoodChart() {
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-none">
+    <div className="bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl p-5 shadow-sm dark:shadow-none">
       <h3 className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-4">{t.chart.title}</h3>
       <ResponsiveContainer width="100%" height={180}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>

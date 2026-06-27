@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookOpen, LayoutDashboard, PenSquare, CalendarDays, MessageCircle } from 'lucide-react';
 import Sidebar from './Sidebar';
+import Background from '@/components/ui/Background';
 import { useJournalStore } from '@/store/journalStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useLangStore, useT } from '@/store/langStore';
@@ -37,42 +38,47 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-200">
-      <Sidebar />
+    <>
+      {/* Animated water background — fixed, behind everything */}
+      <Background />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-2 px-3 py-2.5 border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur sticky top-0 z-40 transition-colors duration-200">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-            <BookOpen size={14} className="text-white" />
-          </div>
-          <span className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex-1">{t.appName}</span>
-          <LangToggle variant="compact" />
-          <ThemeToggle />
-        </header>
+      <div className="flex min-h-screen">
+        <Sidebar />
 
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Mobile top bar */}
+          <header className="lg:hidden flex items-center gap-2 px-3 py-2.5 border-b border-white/20 dark:border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-xl sticky top-0 z-40">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+              <BookOpen size={14} className="text-white" />
+            </div>
+            <span className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex-1">{t.appName}</span>
+            <LangToggle variant="compact" />
+            <ThemeToggle />
+          </header>
 
-        {/* Mobile bottom nav */}
-        <nav className="lg:hidden flex border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-colors duration-200">
-          {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href;
-            return (
-              <Link key={href} href={href}
-                className={cn(
-                  'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
-                  isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-600 dark:text-zinc-200'
-                )}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
+
+          {/* Mobile bottom nav */}
+          <nav className="lg:hidden flex border-t border-white/20 dark:border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-xl">
+            {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
+              return (
+                <Link key={href} href={href}
+                  className={cn(
+                    'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
+                    isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-zinc-400'
+                  )}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

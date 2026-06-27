@@ -25,7 +25,7 @@ export default function JournalCard({ entry, onDelete, index = 0 }: Props) {
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.2, delay: index * 0.04 }}
       layout
-      className="group relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 overflow-hidden shadow-sm dark:shadow-none"
+      className="group relative bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 overflow-hidden shadow-sm dark:shadow-none"
     >
       <Link href={`/journal/${entry.id}`} className="block p-5">
         <div className="flex items-start justify-between gap-3 mb-2">

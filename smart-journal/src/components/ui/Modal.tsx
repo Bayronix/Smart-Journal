@@ -34,7 +34,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="relative z-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-md"
+            className="relative z-10 bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl shadow-2xl w-full max-w-md"
           >
             {title && (
               <div className="flex items-center justify-between px-6 pt-5 pb-0">
