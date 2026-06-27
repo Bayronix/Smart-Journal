@@ -218,6 +218,27 @@ function localAnalyze(title: string, content: string): AIAnalysis {
   };
 }
 
+// ── Shared prompt ─────────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are a psychologically-informed journal analyst.
+The user may write in Ukrainian, Polish, or English — always respond in the SAME language they used.
+Be empathetic, insightful, and specific to what they actually wrote. Never give generic responses.`;
+
+function buildUserPrompt(title: string, content: string): string {
+  return `Analyze this journal entry and return a JSON object with exactly these fields:
+- mood: one of: happy | sad | anxious | neutral | motivated | frustrated | grateful | excited
+- stressLevel: integer 1-10 (1=none, 10=extreme — be accurate, don't default to 5)
+- keyTopics: array of 3-5 short topic strings in the user's language
+- insights: 2-3 sentences of genuine psychological insight about what they wrote
+- advice: 1-2 concrete, actionable sentences
+
+Journal entry:
+Title: ${title || '(untitled)'}
+Content: ${content}
+
+Return ONLY valid JSON. No markdown, no explanation.`;
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
@@ -228,29 +249,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-    if (apiKey && apiKey.startsWith('sk-ant')) {
+    // 1️⃣ Try Groq — LLaMA 3.3 70B first, Mixtral as fallback
+    if (groqKey && groqKey.startsWith('gsk_')) {
+      for (const model of ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768']) {
+        try {
+          const { default: Groq } = await import('groq-sdk');
+          const groq = new Groq({ apiKey: groqKey });
+          const completion = await groq.chat.completions.create({
+            model,
+            max_tokens: 1024,
+            temperature: 0.4,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: buildUserPrompt(title, content) },
+            ],
+          });
+          const text = completion.choices[0]?.message?.content ?? '';
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const analysis: AIAnalysis = { ...JSON.parse(jsonMatch[0]), analyzedAt: new Date().toISOString() };
+            return NextResponse.json({ analysis });
+          }
+        } catch {
+          // try next model
+        }
+      }
+    }
+
+    // 2️⃣ Try Anthropic Claude
+    if (anthropicKey && anthropicKey.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
-        const client = new Anthropic({ apiKey });
+        const client = new Anthropic({ apiKey: anthropicKey });
         const message = await client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
-          messages: [{
-            role: 'user',
-            content: `You are a psychologically-informed journal analyst. The user writes in Ukrainian or English — respond in the same language. Analyze this journal entry and return a JSON object:
-- mood: one of: happy | sad | anxious | neutral | motivated | frustrated | grateful | excited
-- stressLevel: integer 1-10 (be accurate — don't default to 5)
-- keyTopics: array of 3-5 short topic strings in the user's language
-- insights: 2-3 sentences of genuine psychological insight
-- advice: 1-2 concrete actionable sentences
-
-Title: ${title || '(untitled)'}
-Content: ${content}
-
-Return ONLY valid JSON. No markdown.`,
-          }],
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildUserPrompt(title, content) }],
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const analysis: AIAnalysis = { ...JSON.parse(text.trim()), analyzedAt: new Date().toISOString() };
@@ -260,6 +298,7 @@ Return ONLY valid JSON. No markdown.`,
       }
     }
 
+    // 3️⃣ Local keyword fallback
     return NextResponse.json({ analysis: localAnalyze(title, content) });
 
   } catch (error) {

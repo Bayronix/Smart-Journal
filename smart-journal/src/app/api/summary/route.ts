@@ -55,6 +55,21 @@ function localSummary(entries: JournalEntry[]): WeeklySummary {
   };
 }
 
+function buildSummaryPrompt(entriesText: string): string {
+  return `You are a warm, supportive journal therapist. Based on these journal entries, write a thoughtful weekly summary in the SAME language the user wrote in (Ukrainian, Polish, or English).
+
+Return a JSON object:
+- summary: 3-4 warm, insightful sentences about the week's emotional journey
+- dominantMood: happy|sad|anxious|neutral|motivated|frustrated|grateful|excited
+- avgStressLevel: rounded average stress 1-10 (be accurate)
+- topTopics: array of 3-5 recurring themes in the user's language
+
+Journal entries:
+${entriesText}
+
+Return ONLY valid JSON.`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { entries } = await request.json() as { entries: JournalEntry[] };
@@ -63,32 +78,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No entries provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const entriesText = entries.slice(0, 10).map((e) =>
+      `[${e.createdAt.slice(0, 10)}] ${e.title}: ${e.content} (mood: ${e.analysis?.mood ?? '?'}, stress: ${e.analysis?.stressLevel ?? '?'})`
+    ).join('\n\n');
 
-    if (apiKey && apiKey.startsWith('sk-ant')) {
+    const groqKey = process.env.GROQ_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    // 1️⃣ Try Groq
+    if (groqKey && groqKey.startsWith('gsk_')) {
+      for (const model of ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768']) {
+        try {
+          const { default: Groq } = await import('groq-sdk');
+          const groq = new Groq({ apiKey: groqKey });
+          const completion = await groq.chat.completions.create({
+            model,
+            max_tokens: 1024,
+            temperature: 0.5,
+            messages: [{ role: 'user', content: buildSummaryPrompt(entriesText) }],
+          });
+          const text = completion.choices[0]?.message?.content ?? '';
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return NextResponse.json({ summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString() } });
+          }
+        } catch {
+          // try next model
+        }
+      }
+    }
+
+    // 2️⃣ Try Anthropic
+    if (anthropicKey && anthropicKey.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
-        const client = new Anthropic({ apiKey });
-        const entriesText = entries.slice(0, 10).map((e) =>
-          `Date: ${e.createdAt.slice(0, 10)}\nTitle: ${e.title}\nContent: ${e.content}\nMood: ${e.analysis?.mood ?? 'unknown'}`
-        ).join('\n\n---\n\n');
-
+        const client = new Anthropic({ apiKey: anthropicKey });
         const message = await client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
-          messages: [{
-            role: 'user',
-            content: `Write a weekly journal summary. Return JSON with: summary (3-4 warm sentences), dominantMood (happy|sad|anxious|neutral|motivated|frustrated|grateful|excited), avgStressLevel (1-10), topTopics (array of 3-5 themes).\n\n${entriesText}\n\nReturn ONLY valid JSON.`,
-          }],
+          messages: [{ role: 'user', content: buildSummaryPrompt(entriesText) }],
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const parsed = JSON.parse(text.trim());
         return NextResponse.json({ summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString() } });
       } catch {
-        // fall through to local
+        // fall through
       }
     }
 
+    // 3️⃣ Local fallback
     return NextResponse.json({ summary: localSummary(entries) });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
