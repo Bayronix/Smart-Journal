@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { BookOpen, LayoutDashboard, PenSquare, Tag } from 'lucide-react';
+import { BookOpen, LayoutDashboard, PenSquare, Tag, CalendarDays, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useJournalStore } from '@/store/journalStore';
 import { useT } from '@/store/langStore';
@@ -27,6 +27,8 @@ export default function Sidebar() {
   const NAV = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
     { href: '/journal', label: t.nav.journal, icon: BookOpen },
+    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/chat', label: t.nav.chat, icon: MessageCircle },
     { href: '/journal/new', label: t.nav.newEntry, icon: PenSquare },
   ];
 

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, LayoutDashboard, PenSquare } from 'lucide-react';
+import { BookOpen, LayoutDashboard, PenSquare, CalendarDays, MessageCircle } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useJournalStore } from '@/store/journalStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -31,6 +31,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const MOBILE_NAV = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
     { href: '/journal', label: t.nav.journal, icon: BookOpen },
+    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/chat', label: t.nav.chat, icon: MessageCircle },
     { href: '/journal/new', label: t.nav.newEntry, icon: PenSquare },
   ];
 

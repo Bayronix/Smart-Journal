@@ -10,6 +10,8 @@ export const translations = {
       tags: 'Tags',
       allEntries: 'All entries',
       theme: 'Theme',
+      calendar: 'Calendar',
+      chat: 'AI Chat',
     },
     dashboard: {
       title: 'Dashboard',
@@ -100,6 +102,8 @@ export const translations = {
       tags: 'Теги',
       allEntries: 'Усі записи',
       theme: 'Тема',
+      calendar: 'Календар',
+      chat: 'AI Чат',
     },
     dashboard: {
       title: 'Дашборд',
@@ -190,6 +194,8 @@ export const translations = {
       tags: 'Tagi',
       allEntries: 'Wszystkie wpisy',
       theme: 'Motyw',
+      calendar: 'Kalendarz',
+      chat: 'Czat AI',
     },
     dashboard: {
       title: 'Panel',
