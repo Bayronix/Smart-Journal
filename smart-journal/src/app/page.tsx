@@ -6,7 +6,6 @@ import MoodChart       from '@/components/dashboard/MoodChart';
 import WeeklySummary   from '@/components/dashboard/WeeklySummary';
 import SearchBar       from '@/components/search/SearchBar';
 import RecentEntries   from '@/components/journal/RecentEntries';
-import WeatherWidget   from '@/components/weather/WeatherWidget';
 import { useT }        from '@/store/langStore';
 import { useJournalStore } from '@/store/journalStore';
 
@@ -40,7 +39,6 @@ export default function DashboardPage() {
         {/* Right — Context sidebar */}
         <div className="flex flex-col gap-4">
           <QuickStats />
-          <WeatherWidget />
           <WeeklySummary />
         </div>
       </div>

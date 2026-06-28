@@ -55,14 +55,21 @@ function localSummary(entries: JournalEntry[]): WeeklySummary {
   };
 }
 
-function buildSummaryPrompt(entriesText: string): string {
-  return `You are a warm, supportive journal therapist. Based on these journal entries, write a thoughtful weekly summary in the SAME language the user wrote in (Ukrainian, Polish, or English).
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  uk: 'Ukrainian',
+  pl: 'Polish',
+};
+
+function buildSummaryPrompt(entriesText: string, lang: string): string {
+  const language = LANG_NAME[lang] ?? 'Ukrainian';
+  return `You are a warm, supportive journal therapist. Based on these journal entries, write a thoughtful weekly summary in ${language}.
 
 Return a JSON object:
-- summary: 3-4 warm, insightful sentences about the week's emotional journey
+- summary: 3-4 warm, insightful sentences about the week's emotional journey, written in ${language}
 - dominantMood: happy|sad|anxious|neutral|motivated|frustrated|grateful|excited
 - avgStressLevel: rounded average stress 1-10 (be accurate)
-- topTopics: array of 3-5 recurring themes in the user's language
+- topTopics: array of 3-5 recurring themes in ${language}
 
 Journal entries:
 ${entriesText}
@@ -72,7 +79,7 @@ Return ONLY valid JSON.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const { entries } = await request.json() as { entries: JournalEntry[] };
+    const { entries, lang = 'uk' } = await request.json() as { entries: JournalEntry[]; lang?: string };
 
     if (!entries?.length) {
       return NextResponse.json({ error: 'No entries provided' }, { status: 400 });
@@ -95,7 +102,7 @@ export async function POST(request: NextRequest) {
             model,
             max_tokens: 1024,
             temperature: 0.5,
-            messages: [{ role: 'user', content: buildSummaryPrompt(entriesText) }],
+            messages: [{ role: 'user', content: buildSummaryPrompt(entriesText, lang) }],
           });
           const text = completion.choices[0]?.message?.content ?? '';
           const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -117,7 +124,7 @@ export async function POST(request: NextRequest) {
         const message = await client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
-          messages: [{ role: 'user', content: buildSummaryPrompt(entriesText) }],
+          messages: [{ role: 'user', content: buildSummaryPrompt(entriesText, lang) }],
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const parsed = JSON.parse(text.trim());

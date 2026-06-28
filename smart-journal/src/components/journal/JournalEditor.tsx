@@ -10,7 +10,7 @@ import { useJournalStore } from '@/store/journalStore';
 import { analyzeEntry } from '@/services/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { useT } from '@/store/langStore';
+import { useT, useLangStore } from '@/store/langStore';
 import AIInsights from './AIInsights';
 
 interface Props {
@@ -65,6 +65,7 @@ export default function JournalEditor({ entry }: Props) {
   const updateEntry = useJournalStore((s) => s.updateEntry);
   const setAnalysis = useJournalStore((s) => s.setAnalysis);
   const t = useT();
+  const lang = useLangStore((s) => s.lang);
 
   const [title, setTitle] = useState(entry?.title ?? '');
   const [content, setContent] = useState(entry?.content ?? '');
@@ -225,11 +226,11 @@ export default function JournalEditor({ entry }: Props) {
       if (!id) {
         const newEntry = addEntry({ title, content: fullContent, tags });
         setCurrentId(newEntry.id);
-        const result = await analyzeEntry({ title, content: fullContent });
+        const result = await analyzeEntry({ title, content: fullContent }, lang);
         setAnalysis(newEntry.id, result);
         setLocalAnalysis(result);
       } else {
-        const result = await analyzeEntry({ title, content: fullContent });
+        const result = await analyzeEntry({ title, content: fullContent }, lang);
         setAnalysis(id, result);
         setLocalAnalysis(result);
       }

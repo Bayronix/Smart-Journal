@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, RefreshCw, ChevronDown } from 'lucide-react';
 import { useJournalStore } from '@/store/journalStore';
-import { useT } from '@/store/langStore';
+import { useT, useLangStore } from '@/store/langStore';
 import { generateWeeklySummary } from '@/services/api';
 import { moodConfig, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
@@ -15,6 +15,7 @@ export default function WeeklySummary() {
   const weeklySummary = useJournalStore((s) => s.weeklySummary);
   const setWeeklySummary = useJournalStore((s) => s.setWeeklySummary);
   const t = useT();
+  const lang = useLangStore((s) => s.lang);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);
 
@@ -22,7 +23,7 @@ export default function WeeklySummary() {
     if (!entries.length) return;
     setLoading(true);
     try {
-      const summary = await generateWeeklySummary(entries);
+      const summary = await generateWeeklySummary(entries, lang);
       setWeeklySummary(summary);
       setExpanded(true);
     } catch (err) {

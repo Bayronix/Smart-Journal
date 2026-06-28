@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hasGroqKey, groqStream } from '@/lib/groq';
 import type { JournalEntry } from '@/types';
 
-function buildSystemPrompt(entries: JournalEntry[]): string {
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  uk: 'Ukrainian',
+  pl: 'Polish',
+};
+
+function buildSystemPrompt(entries: JournalEntry[], lang: string): string {
+  const language = LANG_NAME[lang] ?? 'Ukrainian';
   const recentEntries = entries.slice(0, 15);
   const journalContext = recentEntries.length
     ? recentEntries.map((e) => {
@@ -19,7 +26,7 @@ Your role:
 - Offer psychological insights and gentle advice
 - Help them reflect on past experiences
 - Be conversational, warm, and genuinely caring
-- Respond in the SAME language the user writes in (Ukrainian, Polish, or English)
+- Always respond in ${language}, regardless of what language the journal entries are written in
 
 The user's journal entries (most recent first):
 ${journalContext}
@@ -33,9 +40,10 @@ Guidelines:
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, entries } = await request.json() as {
+    const { messages, entries, lang = 'uk' } = await request.json() as {
       messages: { role: 'user' | 'assistant'; content: string }[];
       entries: JournalEntry[];
+      lang?: string;
     };
 
     if (!hasGroqKey()) {
@@ -45,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(entries);
+    const systemPrompt = buildSystemPrompt(entries, lang);
 
     const stream = await groqStream({
       system: systemPrompt,

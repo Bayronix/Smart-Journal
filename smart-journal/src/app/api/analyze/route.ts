@@ -220,17 +220,27 @@ function localAnalyze(title: string, content: string): AIAnalysis {
 
 // ── Shared prompt ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a psychologically-informed journal analyst.
-The user may write in Ukrainian, Polish, or English — always respond in the SAME language they used.
-Be empathetic, insightful, and specific to what they actually wrote. Never give generic responses.`;
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  uk: 'Ukrainian',
+  pl: 'Polish',
+};
 
-function buildUserPrompt(title: string, content: string): string {
+function buildSystemPrompt(lang: string): string {
+  const language = LANG_NAME[lang] ?? 'Ukrainian';
+  return `You are a psychologically-informed journal analyst.
+Always respond in ${language}, regardless of what language the journal entry is written in.
+Be empathetic, insightful, and specific to what they actually wrote. Never give generic responses.`;
+}
+
+function buildUserPrompt(title: string, content: string, lang: string): string {
+  const language = LANG_NAME[lang] ?? 'Ukrainian';
   return `Analyze this journal entry and return a JSON object with exactly these fields:
 - mood: one of: happy | sad | anxious | neutral | motivated | frustrated | grateful | excited
 - stressLevel: integer 1-10 (1=none, 10=extreme — be accurate, don't default to 5)
-- keyTopics: array of 3-5 short topic strings in the user's language
-- insights: 2-3 sentences of genuine psychological insight about what they wrote
-- advice: 1-2 concrete, actionable sentences
+- keyTopics: array of 3-5 short topic strings in ${language}
+- insights: 2-3 sentences of genuine psychological insight in ${language}
+- advice: 1-2 concrete, actionable sentences in ${language}
 
 Journal entry:
 Title: ${title || '(untitled)'}
@@ -243,7 +253,7 @@ Return ONLY valid JSON. No markdown, no explanation.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, content } = await request.json() as { title: string; content: string };
+    const { title, content, lang = 'uk' } = await request.json() as { title: string; content: string; lang?: string };
 
     if (!content?.trim()) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
@@ -263,8 +273,8 @@ export async function POST(request: NextRequest) {
             max_tokens: 1024,
             temperature: 0.4,
             messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: buildUserPrompt(title, content) },
+              { role: 'system', content: buildSystemPrompt(lang) },
+              { role: 'user', content: buildUserPrompt(title, content, lang) },
             ],
           });
           const text = completion.choices[0]?.message?.content ?? '';
@@ -287,8 +297,8 @@ export async function POST(request: NextRequest) {
         const message = await client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildUserPrompt(title, content) }],
+          system: buildSystemPrompt(lang),
+          messages: [{ role: 'user', content: buildUserPrompt(title, content, lang) }],
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const analysis: AIAnalysis = { ...JSON.parse(text.trim()), analyzedAt: new Date().toISOString() };

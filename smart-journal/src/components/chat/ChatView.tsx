@@ -77,6 +77,7 @@ export default function ChatView() {
         body: JSON.stringify({
           messages: history.map((m) => ({ role: m.role, content: m.content })),
           entries,
+          lang,
         }),
       });
 
@@ -121,7 +122,7 @@ export default function ChatView() {
           </div>
           <div>
             <h2 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">Aria</h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-500">LLaMA 3.3 70B · знає твій щоденник</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-500">{t.chat.subtitle}</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -145,12 +146,12 @@ export default function ChatView() {
             </div>
             <div>
               <p className="font-semibold text-slate-800 dark:text-zinc-200 mb-1">
-                {entries.length === 0 ? 'Спочатку напиши кілька записів' : 'Запитай мене про свій щоденник'}
+                {entries.length === 0 ? t.chat.noEntriesTitle : t.chat.askTitle}
               </p>
               <p className="text-sm text-slate-500 dark:text-zinc-500">
                 {entries.length === 0
-                  ? 'Я зможу аналізувати твої записи та відповідати на запитання'
-                  : `Я знаю ${entries.length} твоїх записів і можу знайти патерни та інсайти`}
+                  ? t.chat.noEntriesHint
+                  : t.chat.knownEntries(entries.length)}
               </p>
             </div>
             {entries.length > 0 && (
@@ -227,7 +228,7 @@ export default function ChatView() {
             value={input}
             onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
             onKeyDown={handleKeyDown}
-            placeholder={entries.length > 0 ? 'Запитай мене про свій щоденник…' : 'Спочатку напиши кілька записів…'}
+            placeholder={entries.length > 0 ? t.chat.placeholder : t.chat.placeholderDisabled}
             disabled={streaming || entries.length === 0}
             rows={1}
             className="flex-1 bg-transparent text-sm text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-600 outline-none resize-none leading-relaxed disabled:opacity-50"
@@ -242,7 +243,7 @@ export default function ChatView() {
           </button>
         </div>
         <p className="text-[11px] text-slate-400 dark:text-zinc-600 mt-2 text-center">
-          Enter — надіслати · Shift+Enter — новий рядок · LLaMA 3.3 70B via Groq
+          {t.chat.hint}
         </p>
       </div>
     </div>
