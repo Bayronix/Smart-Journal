@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AIAnalysis, Mood } from '@/types';
+import { groqComplete, hasGroqKey } from '@/lib/groq';
 
 // ── Trilingual keyword lists (English + Ukrainian + Polish) ──────────────────
 
@@ -220,6 +221,9 @@ function localAnalyze(title: string, content: string): AIAnalysis {
 
 // ── Shared prompt ─────────────────────────────────────────────────────────────
 
+const MAX_BODY_BYTES = 100_000;
+const ALLOWED_LANGS = new Set(['en', 'uk', 'pl']);
+
 const LANG_NAME: Record<string, string> = {
   en: 'English',
   uk: 'Ukrainian',
@@ -252,45 +256,52 @@ Return ONLY valid JSON. No markdown, no explanation.`;
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  try {
-    const { title, content, lang = 'uk' } = await request.json() as { title: string; content: string; lang?: string };
+  // Body size guard — reject oversized payloads before parsing
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
 
-    if (!content?.trim()) {
+  try {
+    const { title, content, lang: rawLang } = await request.json() as {
+      title: string;
+      content: string;
+      lang?: string;
+    };
+
+    // Validate lang against allowed set — prevents prompt injection via lang param
+    const lang = ALLOWED_LANGS.has(rawLang ?? '') ? rawLang! : 'uk';
+
+    // Server-side content truncation regardless of client-side validation
+    const safeTitle   = (title   ?? '').slice(0, 200);
+    const safeContent = (content ?? '').slice(0, 8000);
+
+    if (!safeContent.trim()) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-
-    // 1️⃣ Try Groq — LLaMA 3.3 70B first, Mixtral as fallback
-    if (groqKey && groqKey.startsWith('gsk_')) {
-      for (const model of ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768']) {
-        try {
-          const { default: Groq } = await import('groq-sdk');
-          const groq = new Groq({ apiKey: groqKey });
-          const completion = await groq.chat.completions.create({
-            model,
-            max_tokens: 1024,
-            temperature: 0.4,
-            messages: [
-              { role: 'system', content: buildSystemPrompt(lang) },
-              { role: 'user', content: buildUserPrompt(title, content, lang) },
-            ],
-          });
-          const text = completion.choices[0]?.message?.content ?? '';
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const analysis: AIAnalysis = { ...JSON.parse(jsonMatch[0]), analyzedAt: new Date().toISOString() };
-            return NextResponse.json({ analysis });
-          }
-        } catch {
-          // try next model
+    // 1️⃣ Try Groq via shared singleton (LLaMA 3.3 70B → Mixtral fallback)
+    if (hasGroqKey()) {
+      try {
+        const text = await groqComplete({
+          system: buildSystemPrompt(lang),
+          messages: [{ role: 'user', content: buildUserPrompt(safeTitle, safeContent, lang) }],
+          maxTokens: 1024,
+          temperature: 0.4,
+        });
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysis: AIAnalysis = { ...JSON.parse(jsonMatch[0]), analyzedAt: new Date().toISOString() };
+          return NextResponse.json({ analysis });
         }
+      } catch {
+        // fall through to Anthropic
       }
     }
 
     // 2️⃣ Try Anthropic Claude
-    if (anthropicKey && anthropicKey.startsWith('sk-ant')) {
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey?.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const client = new Anthropic({ apiKey: anthropicKey });
@@ -298,7 +309,7 @@ export async function POST(request: NextRequest) {
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
           system: buildSystemPrompt(lang),
-          messages: [{ role: 'user', content: buildUserPrompt(title, content, lang) }],
+          messages: [{ role: 'user', content: buildUserPrompt(safeTitle, safeContent, lang) }],
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const analysis: AIAnalysis = { ...JSON.parse(text.trim()), analyzedAt: new Date().toISOString() };
@@ -309,11 +320,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 3️⃣ Local keyword fallback
-    return NextResponse.json({ analysis: localAnalyze(title, content) });
+    return NextResponse.json({ analysis: localAnalyze(safeTitle, safeContent) });
 
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[/api/analyze]', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[/api/analyze]', error);
+    return NextResponse.json({ error: 'Analysis failed. Please try again.' }, { status: 500 });
   }
 }

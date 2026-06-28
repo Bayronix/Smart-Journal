@@ -34,6 +34,7 @@ export interface WeeklySummary {
   avgStressLevel: number;
   topTopics: string[];
   generatedAt: string;
+  lang?: string;
 }
 
 export interface SearchResult {

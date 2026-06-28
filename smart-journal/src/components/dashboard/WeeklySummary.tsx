@@ -18,16 +18,18 @@ export default function WeeklySummary() {
   const lang = useLangStore((s) => s.lang);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!entries.length) return;
     setLoading(true);
+    setGenError(null);
     try {
       const summary = await generateWeeklySummary(entries, lang);
       setWeeklySummary(summary);
       setExpanded(true);
     } catch (err) {
-      console.error(err);
+      setGenError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
       setLoading(false);
     }
@@ -37,6 +39,8 @@ export default function WeeklySummary() {
   const moodLabel = weeklySummary
     ? (t.moods[weeklySummary.dominantMood] ?? mood?.label ?? weeklySummary.dominantMood)
     : '';
+  // True when existing summary was generated in a different language
+  const langMismatch = !!weeklySummary?.lang && weeklySummary.lang !== lang;
 
   return (
     <div className="bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-xl overflow-hidden shadow-sm dark:shadow-none">
@@ -94,6 +98,20 @@ export default function WeeklySummary() {
         )}
       </AnimatePresence>
 
+      {langMismatch && !loading && (
+        <div className="mx-5 mb-4 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 text-xs text-amber-700 dark:text-amber-400">
+          <span>{t.summary.langMismatch}</span>
+          <button
+            onClick={handleGenerate}
+            className="font-semibold underline underline-offset-2 hover:opacity-70 transition-opacity shrink-0"
+          >
+            {t.summary.refresh}
+          </button>
+        </div>
+      )}
+      {genError && (
+        <p className="px-5 pb-4 text-xs text-red-500 dark:text-red-400">{genError}</p>
+      )}
       {!weeklySummary && !loading && entries.length === 0 && (
         <p className="px-5 pb-5 text-xs text-slate-600 dark:text-zinc-200">{t.summary.empty}</p>
       )}

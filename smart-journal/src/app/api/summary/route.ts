@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startOfWeek } from 'date-fns';
 import type { JournalEntry, WeeklySummary, Mood } from '@/types';
+import { groqComplete, hasGroqKey } from '@/lib/groq';
+
+const MAX_BODY_BYTES = 200_000;
+const ALLOWED_LANGS = new Set(['en', 'uk', 'pl']);
+
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  uk: 'Ukrainian',
+  pl: 'Polish',
+};
 
 function localSummary(entries: JournalEntry[]): WeeklySummary {
   const analyzed = entries.filter((e) => e.analysis);
@@ -55,12 +65,6 @@ function localSummary(entries: JournalEntry[]): WeeklySummary {
   };
 }
 
-const LANG_NAME: Record<string, string> = {
-  en: 'English',
-  uk: 'Ukrainian',
-  pl: 'Polish',
-};
-
 function buildSummaryPrompt(entriesText: string, lang: string): string {
   const language = LANG_NAME[lang] ?? 'Ukrainian';
   return `You are a warm, supportive journal therapist. Based on these journal entries, write a thoughtful weekly summary in ${language}.
@@ -78,46 +82,50 @@ Return ONLY valid JSON.`;
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
+
   try {
-    const { entries, lang = 'uk' } = await request.json() as { entries: JournalEntry[]; lang?: string };
+    const { entries, lang: rawLang } = await request.json() as {
+      entries: JournalEntry[];
+      lang?: string;
+    };
 
     if (!entries?.length) {
       return NextResponse.json({ error: 'No entries provided' }, { status: 400 });
     }
 
+    const lang = ALLOWED_LANGS.has(rawLang ?? '') ? rawLang! : 'uk';
+
     const entriesText = entries.slice(0, 10).map((e) =>
-      `[${e.createdAt.slice(0, 10)}] ${e.title}: ${e.content} (mood: ${e.analysis?.mood ?? '?'}, stress: ${e.analysis?.stressLevel ?? '?'})`
+      `[${e.createdAt.slice(0, 10)}] ${e.title.slice(0, 100)}: ${e.content.slice(0, 300)} (mood: ${e.analysis?.mood ?? '?'}, stress: ${e.analysis?.stressLevel ?? '?'})`
     ).join('\n\n');
 
-    const groqKey = process.env.GROQ_API_KEY;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-
-    // 1️⃣ Try Groq
-    if (groqKey && groqKey.startsWith('gsk_')) {
-      for (const model of ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768']) {
-        try {
-          const { default: Groq } = await import('groq-sdk');
-          const groq = new Groq({ apiKey: groqKey });
-          const completion = await groq.chat.completions.create({
-            model,
-            max_tokens: 1024,
-            temperature: 0.5,
-            messages: [{ role: 'user', content: buildSummaryPrompt(entriesText, lang) }],
+    // 1️⃣ Try Groq via shared singleton
+    if (hasGroqKey()) {
+      try {
+        const text = await groqComplete({
+          messages: [{ role: 'user', content: buildSummaryPrompt(entriesText, lang) }],
+          maxTokens: 1024,
+          temperature: 0.5,
+        });
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return NextResponse.json({
+            summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString(), lang },
           });
-          const text = completion.choices[0]?.message?.content ?? '';
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            return NextResponse.json({ summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString() } });
-          }
-        } catch {
-          // try next model
         }
+      } catch {
+        // fall through to Anthropic
       }
     }
 
     // 2️⃣ Try Anthropic
-    if (anthropicKey && anthropicKey.startsWith('sk-ant')) {
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey?.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const client = new Anthropic({ apiKey: anthropicKey });
@@ -128,7 +136,9 @@ export async function POST(request: NextRequest) {
         });
         const text = message.content[0].type === 'text' ? message.content[0].text : '';
         const parsed = JSON.parse(text.trim());
-        return NextResponse.json({ summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString() } });
+        return NextResponse.json({
+          summary: { ...parsed, weekStart: startOfWeek(new Date()).toISOString(), generatedAt: new Date().toISOString(), lang },
+        });
       } catch {
         // fall through
       }
@@ -136,9 +146,9 @@ export async function POST(request: NextRequest) {
 
     // 3️⃣ Local fallback
     return NextResponse.json({ summary: localSummary(entries) });
+
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[/api/summary]', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[/api/summary]', error);
+    return NextResponse.json({ error: 'Summary generation failed. Please try again.' }, { status: 500 });
   }
 }

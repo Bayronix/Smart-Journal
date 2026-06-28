@@ -87,10 +87,17 @@ export default function JournalEditor({ entry }: Props) {
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      setVoiceSupported(!!SR);
-    }
+    // Browser API detection — must run client-side, setState here is intentional
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVoiceSupported(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+  }, []);
+
+  // Stop the microphone when the component unmounts to avoid mic staying open
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
   }, []);
 
   const startRecording = useCallback(() => {

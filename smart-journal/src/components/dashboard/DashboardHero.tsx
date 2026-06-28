@@ -23,10 +23,9 @@ function period(h: number): keyof typeof GREET {
 
 export default function DashboardHero() {
   const lang   = useLangStore((s) => s.lang);
-  const [now, setNow] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
-    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
@@ -49,11 +48,9 @@ export default function DashboardHero() {
             {g[l]}!
           </h1>
         </div>
-        {now && (
-          <p className="text-sm text-slate-400 dark:text-zinc-600 mt-0.5 ml-0.5">
-            {format(now, 'd MMMM yyyy')}
-          </p>
-        )}
+        <p className="text-sm text-slate-400 dark:text-zinc-600 mt-0.5 ml-0.5">
+          {format(now, 'd MMMM yyyy')}
+        </p>
       </div>
 
       <Link

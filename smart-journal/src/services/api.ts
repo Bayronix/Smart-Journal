@@ -21,10 +21,19 @@ export async function semanticSearch(
   query: string,
   entries: JournalEntry[]
 ): Promise<SearchResult[]> {
+  // Trim entries before sending — route uses only 30 entries × 200 chars
+  const trimmedEntries = entries.slice(0, 30).map((e) => ({
+    id: e.id,
+    title: e.title,
+    createdAt: e.createdAt,
+    content: e.content.slice(0, 200),
+    tags: e.tags,
+    updatedAt: e.updatedAt,
+  }));
   const res = await fetch('/api/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, entries }),
+    body: JSON.stringify({ query, entries: trimmedEntries }),
   });
   if (!res.ok) throw new Error('Search failed');
   const { results } = await res.json();

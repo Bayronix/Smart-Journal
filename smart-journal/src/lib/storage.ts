@@ -13,9 +13,20 @@ export function loadEntries(): JournalEntry[] {
   }
 }
 
+let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Debounced write — avoids blocking the main thread on every keystroke-triggered save
 export function saveEntries(entries: JournalEntry[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    } catch {
+      // localStorage quota exceeded — silently ignore
+    }
+    _saveTimer = null;
+  }, 300);
 }
 
 export function loadWeeklySummary(): WeeklySummary | null {

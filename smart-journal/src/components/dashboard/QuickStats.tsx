@@ -2,6 +2,9 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+
+// Computed once at module load — stable across renders, no impurity during render
+const SEVEN_DAYS_AGO = Date.now() - 7 * 86_400_000;
 import { useJournalStore } from '@/store/journalStore';
 import { useLangStore } from '@/store/langStore';
 import { moodConfig } from '@/lib/utils';
@@ -21,9 +24,9 @@ export default function QuickStats() {
       if (m) counts[m] = (counts[m] ?? 0) + 1;
     }
     const topMood = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    const thisWeek = entries.filter((e) => {
-      return (Date.now() - new Date(e.createdAt).getTime()) / 86_400_000 <= 7;
-    }).length;
+    const thisWeek = entries.filter((e) =>
+      new Date(e.createdAt).getTime() >= SEVEN_DAYS_AGO
+    ).length;
     return { total: entries.length, thisWeek, avgStress, topMood };
   }, [entries]);
 

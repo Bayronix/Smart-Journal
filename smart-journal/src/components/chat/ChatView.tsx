@@ -70,13 +70,24 @@ export default function ChatView() {
 
     const history = [...messages, { role: 'user' as const, content: trimmed }];
 
+    // Trim entries before sending — server uses only 15 entries × 400 chars anyway
+    const trimmedEntries = entries.slice(0, 20).map((e) => ({
+      id: e.id,
+      title: e.title,
+      createdAt: e.createdAt,
+      content: e.content.slice(0, 400),
+      analysis: e.analysis
+        ? { mood: e.analysis.mood, stressLevel: e.analysis.stressLevel }
+        : undefined,
+    }));
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: history.map((m) => ({ role: m.role, content: m.content })),
-          entries,
+          entries: trimmedEntries,
           lang,
         }),
       });
@@ -101,7 +112,7 @@ export default function ChatView() {
     } finally {
       setStreaming(false);
     }
-  }, [streaming, messages, entries, addUserMessage, appendToLast, setStreaming]);
+  }, [streaming, messages, entries, lang, addUserMessage, appendToLast, setStreaming]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

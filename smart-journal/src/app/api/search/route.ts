@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { JournalEntry, SearchResult } from '@/types';
 import { localSearch } from '@/lib/search';
 import { extractSnippet } from '@/lib/utils';
+import { groqComplete, hasGroqKey } from '@/lib/groq';
+
+const MAX_BODY_BYTES = 300_000;
 
 function buildSearchPrompt(query: string, entryList: string): string {
   return `Search query: "${query}"
@@ -18,6 +21,11 @@ ${entryList}`;
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json({ results: [] }, { status: 413 });
+  }
+
   try {
     const { query, entries } = await request.json() as { query: string; entries: JournalEntry[] };
 
@@ -31,26 +39,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ results: localResults });
     }
 
-    // AI semantic search fallback
+    // AI semantic search fallback — trim entries before building prompt
     const entryList = entries.slice(0, 30)
-      .map((e, i) => `[${i}] ${e.createdAt.slice(0, 10)} | ${e.title}: ${e.content.slice(0, 200)}`)
+      .map((e, i) => `[${i}] ${e.createdAt.slice(0, 10)} | ${e.title.slice(0, 80)}: ${e.content.slice(0, 200)}`)
       .join('\n');
 
-    const groqKey = process.env.GROQ_API_KEY;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-
-    // Try Groq (use smaller/faster model for search)
-    if (groqKey && groqKey.startsWith('gsk_')) {
+    // Try Groq via shared singleton
+    if (hasGroqKey()) {
       try {
-        const { default: Groq } = await import('groq-sdk');
-        const groq = new Groq({ apiKey: groqKey });
-        const completion = await groq.chat.completions.create({
-          model: 'mixtral-8x7b-32768',
-          max_tokens: 512,
-          temperature: 0.1,
+        const text = await groqComplete({
           messages: [{ role: 'user', content: buildSearchPrompt(query, entryList) }],
+          maxTokens: 512,
+          temperature: 0.1,
         });
-        const text = completion.choices[0]?.message?.content ?? '[]';
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const matches = JSON.parse(jsonMatch[0]) as { index: number; relevance: number; reason: string }[];
@@ -60,12 +61,13 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ results });
         }
       } catch {
-        // fall through
+        // fall through to Anthropic
       }
     }
 
     // Try Anthropic
-    if (anthropicKey && anthropicKey.startsWith('sk-ant')) {
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey?.startsWith('sk-ant')) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const client = new Anthropic({ apiKey: anthropicKey });
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ results: [] });
   } catch (error) {
-    console.error('[/api/search]', error instanceof Error ? error.message : error);
+    console.error('[/api/search]', error);
     return NextResponse.json({ results: [] });
   }
 }

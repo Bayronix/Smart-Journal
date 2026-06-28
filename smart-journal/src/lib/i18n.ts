@@ -77,6 +77,7 @@ export const translations = {
       refresh: 'Refresh',
       avgStress: 'Avg Stress:',
       empty: 'Write some entries first to generate a summary.',
+      langMismatch: 'Summary is in another language.',
     },
     chat: {
       subtitle: 'LLaMA 3.3 70B · reads your journal',
@@ -184,6 +185,7 @@ export const translations = {
       refresh: 'Оновити',
       avgStress: 'Сер. стрес:',
       empty: 'Спочатку напиши кілька записів.',
+      langMismatch: 'Підсумок створено іншою мовою.',
     },
     chat: {
       subtitle: 'LLaMA 3.3 70B · знає твій щоденник',
@@ -291,6 +293,7 @@ export const translations = {
       refresh: 'Odśwież',
       avgStress: 'Śr. stres:',
       empty: 'Najpierw napisz kilka wpisów.',
+      langMismatch: 'Podsumowanie jest w innym języku.',
     },
     chat: {
       subtitle: 'LLaMA 3.3 70B · zna Twój dziennik',

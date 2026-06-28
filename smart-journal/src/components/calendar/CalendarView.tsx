@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -9,7 +9,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useJournalStore } from '@/store/journalStore';
-import { moodConfig, moodChartColor, formatDateLong } from '@/lib/utils';
+import { moodConfig, moodChartColor } from '@/lib/utils';
 import type { JournalEntry } from '@/types';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
@@ -23,13 +23,8 @@ const MONTH_NAMES_UA = [
 
 export default function CalendarView() {
   const entries = useJournalStore((s) => s.entries);
-  // Use null initially to avoid SSR/client mismatch with new Date()
-  const [current, setCurrent] = useState<Date | null>(null);
+  const [current, setCurrent] = useState<Date>(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setCurrent(new Date());
-  }, []);
 
   // Build lookup: date string → entries[]
   const entriesByDay = useMemo(() => {

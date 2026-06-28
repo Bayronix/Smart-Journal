@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hasGroqKey, groqStream } from '@/lib/groq';
 import type { JournalEntry } from '@/types';
 
+const MAX_BODY_BYTES = 300_000;
+const ALLOWED_LANGS = new Set(['en', 'uk', 'pl']);
+
 const LANG_NAME: Record<string, string> = {
   en: 'English',
   uk: 'Ukrainian',
@@ -39,12 +42,19 @@ Guidelines:
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
+
   try {
-    const { messages, entries, lang = 'uk' } = await request.json() as {
+    const { messages, entries, lang: rawLang } = await request.json() as {
       messages: { role: 'user' | 'assistant'; content: string }[];
       entries: JournalEntry[];
       lang?: string;
     };
+
+    const lang = ALLOWED_LANGS.has(rawLang ?? '') ? rawLang! : 'uk';
 
     if (!hasGroqKey()) {
       return NextResponse.json(
@@ -69,8 +79,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[/api/chat]', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[/api/chat]', error);
+    return NextResponse.json({ error: 'Chat failed. Please try again.' }, { status: 500 });
   }
 }
