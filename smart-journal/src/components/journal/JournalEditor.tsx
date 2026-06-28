@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Brain, Save, X, Plus, Tag } from 'lucide-react';
+import { Mic, MicOff, Brain, Save, X, Plus, Tag, CheckCircle2, XCircle } from 'lucide-react';
+import { z } from 'zod';
 import type { JournalEntry } from '@/types';
 import { useJournalStore } from '@/store/journalStore';
 import { analyzeEntry } from '@/services/api';
@@ -53,21 +54,29 @@ declare global {
   }
 }
 
+const MAX_CHARS = 5000;
+const MIN_CHARS = 5;
+
+type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
+
 export default function JournalEditor({ entry }: Props) {
   const router = useRouter();
   const addEntry = useJournalStore((s) => s.addEntry);
   const updateEntry = useJournalStore((s) => s.updateEntry);
   const setAnalysis = useJournalStore((s) => s.setAnalysis);
+  const t = useT();
 
   const [title, setTitle] = useState(entry?.title ?? '');
   const [content, setContent] = useState(entry?.content ?? '');
   const [tags, setTags] = useState<string[]>(entry?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analysis, setLocalAnalysis] = useState(entry?.analysis ?? null);
-  const [saved, setSaved] = useState(false);
   const [currentId, setCurrentId] = useState(entry?.id ?? '');
 
   // Voice input
@@ -104,7 +113,6 @@ export default function JournalEditor({ entry }: Props) {
           interim += result[0].transcript;
         }
       }
-      // Save finalText immediately using a const so the closure captures the correct value
       if (finalText) {
         const captured = finalText;
         setContent((prev) => {
@@ -121,7 +129,6 @@ export default function JournalEditor({ entry }: Props) {
     };
 
     recognition.onend = () => {
-      // Save any interim transcript that was left when recording ended
       setTranscript((currentTranscript) => {
         if (currentTranscript.trim()) {
           const captured = currentTranscript.trim();
@@ -141,7 +148,6 @@ export default function JournalEditor({ entry }: Props) {
   }, []);
 
   const stopRecording = useCallback(() => {
-    // Save any interim transcript before stopping
     setTranscript((currentTranscript) => {
       if (currentTranscript.trim()) {
         const captured = currentTranscript.trim();
@@ -167,30 +173,49 @@ export default function JournalEditor({ entry }: Props) {
   const removeTag = (tag: string) => setTags(tags.filter((t) => t !== tag));
 
   const handleSave = async () => {
-    if (!content.trim()) return;
-    setSaving(true);
+    if (!title.trim()) {
+      setTitleError(t.editor.validationTitleRequired);
+      return;
+    }
+    setTitleError(null);
+
+    const schema = z.string()
+      .min(1, t.editor.validationRequired)
+      .min(MIN_CHARS, t.editor.validationMinChars)
+      .max(MAX_CHARS, t.editor.validationMaxChars);
+
+    const result = schema.safeParse(fullText);
+    if (!result.success) {
+      setValidationError(result.error.issues[0].message);
+      return;
+    }
+
+    setValidationError(null);
+    setSaveError(null);
+    setSaveStatus('saving');
+
     try {
       if (entry) {
         updateEntry(entry.id, { title, content, tags });
-        setSaved(true);
       } else {
         const newEntry = addEntry({ title, content, tags });
         setCurrentId(newEntry.id);
-        setSaved(true);
         router.replace(`/journal/${newEntry.id}`);
       }
-    } finally {
-      setSaving(false);
-      setTimeout(() => setSaved(false), 2000);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t.editor.saveError;
+      setSaveError(msg);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
   const handleAnalyze = async () => {
-    // Use full visible content (including any unsaved interim transcript)
     const fullContent = (content + (transcript ? ' ' + transcript : '')).trim();
     if (!fullContent) return;
 
-    // Commit the full content to state first
     if (fullContent !== content) setContent(fullContent);
 
     setAnalyzing(true);
@@ -216,21 +241,49 @@ export default function JournalEditor({ entry }: Props) {
     }
   };
 
-  const t = useT();
   const fullText = (content + (transcript ? ' ' + transcript : '')).trim();
   const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+  const charCount = fullText.length;
+  const isOverLimit = charCount > MAX_CHARS;
+  const charCountColor =
+    charCount > MAX_CHARS
+      ? 'text-red-500 dark:text-red-400'
+      : charCount > MAX_CHARS * 0.9
+      ? 'text-amber-500 dark:text-amber-400'
+      : 'text-slate-400 dark:text-zinc-600';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="flex flex-col gap-5">
         {/* Title */}
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={t.editor.titlePlaceholder}
-          className="bg-transparent text-2xl font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-full border-none focus:ring-0"
-        />
+        <div className="flex flex-col gap-1">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(null); }}
+            placeholder={t.editor.titlePlaceholder}
+            aria-label="Entry title"
+            aria-invalid={!!titleError}
+            aria-describedby={titleError ? 'title-error' : undefined}
+            className="bg-transparent text-2xl font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-700 outline-none w-full border-none focus:ring-0"
+          />
+          <AnimatePresence>
+            {titleError && (
+              <motion.p
+                id="title-error"
+                role="alert"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15 }}
+                className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1"
+              >
+                <XCircle size={12} className="shrink-0" />
+                {titleError}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Tags */}
         <div className="flex flex-wrap items-center gap-2">
@@ -266,10 +319,19 @@ export default function JournalEditor({ entry }: Props) {
           <textarea
             value={content + (transcript ? ' ' + transcript : '')}
             onChange={(e) => {
-              if (!recording) setContent(e.target.value);
+              if (!recording) {
+                setContent(e.target.value);
+                if (validationError) setValidationError(null);
+              }
             }}
             placeholder={t.editor.contentPlaceholder}
-            className="w-full min-h-[320px] bg-transparent text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 text-base leading-relaxed outline-none resize-none border-none focus:ring-0"
+            aria-label="Entry content"
+            aria-invalid={!!validationError}
+            aria-describedby={validationError ? 'content-error' : undefined}
+            className={[
+              'w-full min-h-[320px] bg-transparent text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-700 text-base leading-relaxed outline-none resize-none border-none focus:ring-0 transition-colors',
+              validationError ? 'placeholder-red-300 dark:placeholder-red-800' : '',
+            ].join(' ')}
           />
 
           {/* Live voice preview */}
@@ -299,12 +361,72 @@ export default function JournalEditor({ entry }: Props) {
           )}
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 flex-wrap border-t border-slate-200 dark:border-zinc-800 pt-4">
-          <span className="text-xs text-slate-600 dark:text-zinc-200">{t.editor.words(wordCount)}</span>
+        {/* Char count + validation error */}
+        <div className="flex items-start justify-between gap-2 -mt-3">
+          <AnimatePresence mode="wait">
+            {validationError ? (
+              <motion.p
+                key="error"
+                id="content-error"
+                role="alert"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15 }}
+                className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1"
+              >
+                <XCircle size={12} className="shrink-0" />
+                {validationError}
+              </motion.p>
+            ) : (
+              <span key="empty" />
+            )}
+          </AnimatePresence>
 
-          <div className="ml-auto flex items-center gap-2 flex-wrap">
-            {/* Voice button */}
+          <span className={`text-xs ml-auto tabular-nums shrink-0 transition-colors ${charCountColor}`}>
+            {charCount} / {MAX_CHARS}
+          </span>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex items-center gap-2 border-t border-slate-200 dark:border-zinc-800 pt-4">
+          {/* Left: word count */}
+          <span className="text-xs text-slate-600 dark:text-zinc-200 shrink-0">{t.editor.words(wordCount)}</span>
+
+          {/* Center: save feedback */}
+          <div className="flex-1 flex justify-center">
+            <AnimatePresence mode="wait">
+              {saveStatus === 'success' && (
+                <motion.span
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.85, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                >
+                  <CheckCircle2 size={13} />
+                  {t.editor.saved}
+                </motion.span>
+              )}
+              {saveStatus === 'error' && saveError && (
+                <motion.span
+                  key="error"
+                  initial={{ opacity: 0, scale: 0.85, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-red-500 dark:text-red-400"
+                >
+                  <XCircle size={13} />
+                  {saveError}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Right: action buttons */}
+          <div className="flex items-center gap-2 shrink-0">
             {voiceSupported && (
               <Button
                 variant={recording ? 'danger' : 'secondary'}
@@ -316,7 +438,6 @@ export default function JournalEditor({ entry }: Props) {
               </Button>
             )}
 
-            {/* Analyze */}
             <Button
               variant="secondary"
               size="sm"
@@ -328,16 +449,15 @@ export default function JournalEditor({ entry }: Props) {
               {analyzing ? t.editor.analyzing : t.editor.analyze}
             </Button>
 
-            {/* Save */}
             <Button
               variant="primary"
               size="sm"
-              loading={saving}
+              loading={saveStatus === 'saving'}
               onClick={handleSave}
-              disabled={!fullText}
+              disabled={saveStatus === 'saving' || isOverLimit}
             >
               <Save size={14} />
-              {saved ? t.editor.saved : t.editor.save}
+              {t.editor.save}
             </Button>
           </div>
         </div>

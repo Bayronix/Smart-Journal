@@ -57,9 +57,12 @@ export const useJournalStore = create<JournalState>()(
     },
 
     updateEntry(id, data) {
-      const entries = get().entries.map((e) =>
-        e.id === id ? { ...e, ...data, updatedAt: new Date().toISOString() } : e
-      );
+      const entries = get().entries.map((e) => {
+        if (e.id !== id) return e;
+        // createdAt is explicitly kept from e — data cannot override it
+        const { createdAt, ...rest } = e;
+        return { createdAt, ...rest, ...data, updatedAt: new Date().toISOString() };
+      });
       saveEntries(entries);
       set({ entries });
     },

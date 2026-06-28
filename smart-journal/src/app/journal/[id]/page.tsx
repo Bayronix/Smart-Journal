@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2 } from 'lucide-react';
@@ -10,41 +10,34 @@ import JournalEditor from '@/components/journal/JournalEditor';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { formatDateLong } from '@/lib/utils';
-import type { JournalEntry } from '@/types';
 
 export default function EntryPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+
+  // Read directly from the store — always the live, correct createdAt
   const hydrated = useJournalStore((s) => s.hydrated);
-  const getEntry = useJournalStore((s) => s.getEntry);
+  const entry = useJournalStore((s) => s.entries.find((e) => e.id === id));
   const deleteEntry = useJournalStore((s) => s.deleteEntry);
   const t = useT();
-  const [entry, setEntry] = useState<JournalEntry | undefined>(undefined);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [notFoundState, setNotFoundState] = useState(false);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    const found = getEntry(id);
-    if (!found) setNotFoundState(true);
-    else setEntry(found);
-  }, [hydrated, id, getEntry]);
-
-  if (notFoundState) {
+  if (!hydrated) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <p className="text-slate-500 dark:text-zinc-500">{t.notFound}</p>
-        <Link href="/journal" className="text-indigo-500 hover:text-indigo-400 text-sm">
-          {t.editor.backToJournal}
-        </Link>
+      <div className="flex items-center justify-center py-32">
+        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!entry) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <p className="text-slate-500 dark:text-zinc-500">{t.notFound}</p>
+        <Link href="/journal" className="text-indigo-500 hover:text-indigo-400 text-sm">
+          {t.editor.backToJournal}
+        </Link>
       </div>
     );
   }
