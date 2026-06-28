@@ -4,7 +4,6 @@ import DashboardHero   from '@/components/dashboard/DashboardHero';
 import QuickStats      from '@/components/dashboard/QuickStats';
 import MoodChart       from '@/components/dashboard/MoodChart';
 import WeeklySummary   from '@/components/dashboard/WeeklySummary';
-import SearchBar       from '@/components/search/SearchBar';
 import RecentEntries   from '@/components/journal/RecentEntries';
 import { useT }        from '@/store/langStore';
 import { useJournalStore } from '@/store/journalStore';
@@ -19,11 +18,6 @@ export default function DashboardPage() {
 
       {/* ── Greeting bar ──────────────────────────────────────── */}
       <DashboardHero />
-
-      {/* ── Search ────────────────────────────────────────────── */}
-      <div className="mt-5">
-        <SearchBar />
-      </div>
 
       {/* ── Main two-column layout ────────────────────────────── */}
       <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
