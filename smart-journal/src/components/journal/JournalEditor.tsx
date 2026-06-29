@@ -100,6 +100,8 @@ export default function JournalEditor({ entry }: Props) {
     };
   }, []);
 
+  const SPEECH_LANG: Record<string, string> = { en: 'en-US', uk: 'uk-UA', pl: 'pl-PL' };
+
   const startRecording = useCallback(() => {
     const SR: SpeechRecognitionConstructor | undefined =
       window.SpeechRecognition ?? window.webkitSpeechRecognition;
@@ -108,7 +110,7 @@ export default function JournalEditor({ entry }: Props) {
     const recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = SPEECH_LANG[lang] ?? 'uk-UA';
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
