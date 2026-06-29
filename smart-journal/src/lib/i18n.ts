@@ -79,6 +79,15 @@ export const translations = {
       empty: 'Write some entries first to generate a summary.',
       langMismatch: 'Summary is in another language.',
     },
+    calendar: {
+      weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+      hint: (n: number) => `${n} ${n === 1 ? 'entry' : 'entries'} · click a day to view`,
+      today: 'Today',
+      dayEntries: (n: number) => `${n} ${n === 1 ? 'entry' : 'entries'}`,
+      untitled: 'Untitled',
+      stress: (n: number) => `stress ${n}/10`,
+    },
     chat: {
       subtitle: 'LLaMA 3.3 70B · reads your journal',
       noEntriesTitle: 'Write some entries first',
@@ -187,6 +196,15 @@ export const translations = {
       empty: 'Спочатку напиши кілька записів.',
       langMismatch: 'Підсумок створено іншою мовою.',
     },
+    calendar: {
+      weekdays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+      months: ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],
+      hint: (n: number) => `${n} записів · клікни на день щоб переглянути`,
+      today: 'Сьогодні',
+      dayEntries: (n: number) => `${n} ${n === 1 ? 'запис' : n < 5 ? 'записи' : 'записів'}`,
+      untitled: 'Без назви',
+      stress: (n: number) => `стрес ${n}/10`,
+    },
     chat: {
       subtitle: 'LLaMA 3.3 70B · знає твій щоденник',
       noEntriesTitle: 'Спочатку напиши кілька записів',
@@ -294,6 +312,15 @@ export const translations = {
       avgStress: 'Śr. stres:',
       empty: 'Najpierw napisz kilka wpisów.',
       langMismatch: 'Podsumowanie jest w innym języku.',
+    },
+    calendar: {
+      weekdays: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'],
+      months: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'],
+      hint: (n: number) => `${n} ${n === 1 ? 'wpis' : 'wpisów'} · kliknij dzień aby zobaczyć`,
+      today: 'Dzisiaj',
+      dayEntries: (n: number) => `${n} ${n === 1 ? 'wpis' : n < 5 ? 'wpisy' : 'wpisów'}`,
+      untitled: 'Bez tytułu',
+      stress: (n: number) => `stres ${n}/10`,
     },
     chat: {
       subtitle: 'LLaMA 3.3 70B · zna Twój dziennik',

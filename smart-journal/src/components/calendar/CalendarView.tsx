@@ -9,24 +9,18 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useJournalStore } from '@/store/journalStore';
+import { useT } from '@/store/langStore';
 import { moodConfig, moodChartColor } from '@/lib/utils';
 import type { JournalEntry } from '@/types';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
-
-const MONTH_NAMES_UA = [
-  'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
-  'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень',
-];
-
 export default function CalendarView() {
   const entries = useJournalStore((s) => s.entries);
+  const t = useT();
   const [current, setCurrent] = useState<Date>(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  // Build lookup: date string → entries[]
   const entriesByDay = useMemo(() => {
     const map = new Map<string, JournalEntry[]>();
     for (const entry of entries) {
@@ -37,9 +31,7 @@ export default function CalendarView() {
     return map;
   }, [entries]);
 
-  // Build calendar grid
   const days = useMemo(() => {
-    if (!current) return [];
     const monthStart = startOfMonth(current);
     const monthEnd = endOfMonth(current);
     const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -60,40 +52,33 @@ export default function CalendarView() {
     }
   };
 
-  // Render loading skeleton until date is initialized client-side
-  if (!current) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="h-8 w-48 bg-slate-100 dark:bg-zinc-800 rounded-lg animate-pulse mb-6" />
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 h-96 animate-pulse" />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       {/* Month navigator */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-            {MONTH_NAMES_UA[current.getMonth()]} {current.getFullYear()}
+            {t.calendar.months[current.getMonth()]} {current.getFullYear()}
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-500 mt-0.5">
-            {entries.length} записів · клікни на день щоб переглянути
+            {t.calendar.hint(entries.length)}
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setCurrent(subMonths(current, 1))}
+          <button
+            onClick={() => setCurrent(subMonths(current, 1))}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition-colors"
           >
             <ChevronLeft size={18} />
           </button>
-          <button onClick={() => setCurrent(new Date())}
+          <button
+            onClick={() => setCurrent(new Date())}
             className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 transition-colors"
           >
-            Сьогодні
+            {t.calendar.today}
           </button>
-          <button onClick={() => setCurrent(addMonths(current, 1))}
+          <button
+            onClick={() => setCurrent(addMonths(current, 1))}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition-colors"
           >
             <ChevronRight size={18} />
@@ -105,7 +90,7 @@ export default function CalendarView() {
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden shadow-sm dark:shadow-none">
         {/* Weekday headers */}
         <div className="grid grid-cols-7 border-b border-slate-100 dark:border-zinc-800">
-          {WEEKDAYS.map((d) => (
+          {t.calendar.weekdays.map((d) => (
             <div key={d} className="py-2.5 text-center text-xs font-semibold text-slate-400 dark:text-zinc-600">
               {d}
             </div>
@@ -122,34 +107,32 @@ export default function CalendarView() {
             const today = isToday(day);
             const selected = selectedDay && isSameDay(day, selectedDay);
 
-            // Pick dominant mood color for the day
             const moodColors = dayEntries
               .filter((e) => e.analysis?.mood)
               .map((e) => moodChartColor[e.analysis!.mood]);
 
             return (
-              <div key={key}
+              <div
+                key={key}
                 onClick={() => handleDayClick(day)}
-                className={`
-                  relative min-h-[64px] sm:min-h-[80px] p-1.5 sm:p-2 border-b border-r border-slate-100 dark:border-zinc-800/50
-                  ${i % 7 === 6 ? 'border-r-0' : ''}
-                  ${Math.floor(i / 7) === Math.floor((days.length - 1) / 7) ? 'border-b-0' : ''}
-                  ${hasEntries ? 'cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10' : ''}
-                  ${selected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}
-                  transition-colors duration-100
-                `}
+                className={[
+                  'relative min-h-[64px] sm:min-h-[80px] p-1.5 sm:p-2 border-b border-r border-slate-100 dark:border-zinc-800/50',
+                  i % 7 === 6 ? 'border-r-0' : '',
+                  Math.floor(i / 7) === Math.floor((days.length - 1) / 7) ? 'border-b-0' : '',
+                  hasEntries ? 'cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10' : '',
+                  selected ? 'bg-indigo-50 dark:bg-indigo-900/20' : '',
+                  'transition-colors duration-100',
+                ].join(' ')}
               >
-                {/* Day number */}
-                <span className={`
-                  inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium
-                  ${today ? 'bg-indigo-600 text-white' : ''}
-                  ${!today && inMonth ? 'text-slate-700 dark:text-zinc-300' : ''}
-                  ${!inMonth ? 'text-slate-300 dark:text-zinc-700' : ''}
-                `}>
+                <span className={[
+                  'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium',
+                  today ? 'bg-indigo-600 text-white' : '',
+                  !today && inMonth ? 'text-slate-700 dark:text-zinc-300' : '',
+                  !inMonth ? 'text-slate-300 dark:text-zinc-700' : '',
+                ].join(' ')}>
                   {format(day, 'd')}
                 </span>
 
-                {/* Mood dots */}
                 {hasEntries && (
                   <div className="flex flex-wrap gap-0.5 mt-1">
                     {moodColors.slice(0, 3).map((color, ci) => (
@@ -174,7 +157,7 @@ export default function CalendarView() {
         {Object.entries(moodConfig).map(([mood, cfg]) => (
           <div key={mood} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-500">
             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: moodChartColor[mood as keyof typeof moodChartColor] }} />
-            {cfg.emoji} {cfg.label}
+            {cfg.emoji} {t.moods[mood as keyof typeof t.moods] ?? cfg.label}
           </div>
         ))}
       </div>
@@ -191,9 +174,10 @@ export default function CalendarView() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-zinc-800">
               <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">
-                {format(selectedDay, 'd')} {MONTH_NAMES_UA[selectedDay.getMonth()]} — {selectedEntries.length} запис{selectedEntries.length > 1 ? 'и' : ''}
+                {format(selectedDay, 'd')} {t.calendar.months[selectedDay.getMonth()]} — {t.calendar.dayEntries(selectedEntries.length)}
               </h3>
-              <button onClick={() => setSelectedDay(null)}
+              <button
+                onClick={() => setSelectedDay(null)}
                 className="p-1 rounded-md text-slate-400 dark:text-zinc-600 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors"
               >
                 <X size={15} />
@@ -212,7 +196,7 @@ export default function CalendarView() {
                         <div className="flex items-center gap-2 mb-1">
                           {mood && <span className="text-base">{mood.emoji}</span>}
                           <h4 className="font-medium text-slate-900 dark:text-zinc-100 text-sm truncate">
-                            {entry.title || 'Без назви'}
+                            {entry.title || t.calendar.untitled}
                           </h4>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-zinc-500 line-clamp-2 leading-relaxed">
@@ -227,12 +211,12 @@ export default function CalendarView() {
                         )}
                       </div>
                       {entry.analysis && (
-                        <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="shrink-0">
                           <span className={`text-xs font-semibold ${
                             entry.analysis.stressLevel <= 3 ? 'text-emerald-500' :
                             entry.analysis.stressLevel <= 6 ? 'text-yellow-500' : 'text-red-500'
                           }`}>
-                            стрес {entry.analysis.stressLevel}/10
+                            {t.calendar.stress(entry.analysis.stressLevel)}
                           </span>
                         </div>
                       )}
